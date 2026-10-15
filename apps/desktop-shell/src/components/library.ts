@@ -21,7 +21,12 @@ export class LibraryComponent {
   private apps: AppEntry[] = [];
   private onLaunchApp?: (app: AppEntry, sessionId: string) => void;
   private onShowErrorModal?: (title: string, error: any) => void;
-  private onShowInspectModal?: (app: AppEntry, neg: NegotiationResult, meta: PackageMetadata) => void;
+  private onShowInspectModal?: (
+    app: AppEntry,
+    neg: NegotiationResult,
+    meta: PackageMetadata,
+    onLaunch?: (app: AppEntry) => void
+  ) => void;
 
   constructor(container: HTMLElement, client: UMRClient) {
     this.container = container;
@@ -33,7 +38,12 @@ export class LibraryComponent {
   setCallbacks(
     onLaunch: (app: AppEntry, sessionId: string) => void,
     onShowError: (title: string, error: any) => void,
-    onInspect: (app: AppEntry, neg: NegotiationResult, meta: PackageMetadata) => void
+    onInspect: (
+      app: AppEntry,
+      neg: NegotiationResult,
+      meta: PackageMetadata,
+      onLaunch?: (app: AppEntry) => void
+    ) => void
   ) {
     this.onLaunchApp = onLaunch;
     this.onShowErrorModal = onShowError;
@@ -251,7 +261,9 @@ export class LibraryComponent {
     try {
       const res = await this.client.negotiate(app.filePath);
       if (this.onShowInspectModal) {
-        this.onShowInspectModal(app, res.negotiation, res.metadata);
+        this.onShowInspectModal(app, res.negotiation, res.metadata, (targetApp) => {
+          this.handleLaunch(targetApp);
+        });
       }
     } catch (e: any) {
       if (this.onShowErrorModal) {

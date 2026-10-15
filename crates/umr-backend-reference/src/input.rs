@@ -21,6 +21,7 @@ pub struct AndroidInputSubsystem {
     display_height: u32,
     logcat_path: PathBuf,
     latest_touch: Arc<Mutex<Option<ActiveTouchState>>>,
+    latest_nav: Arc<Mutex<Option<(NavigationButton, Instant)>>>,
     event_counter: Arc<Mutex<u64>>,
 }
 
@@ -31,6 +32,7 @@ impl AndroidInputSubsystem {
             display_height,
             logcat_path: logcat_path.as_ref().to_path_buf(),
             latest_touch: Arc::new(Mutex::new(None)),
+            latest_nav: Arc::new(Mutex::new(None)),
             event_counter: Arc::new(Mutex::new(0)),
         }
     }
@@ -38,6 +40,11 @@ impl AndroidInputSubsystem {
     /// Returns the latest active touch state for framebuffer rendering.
     pub fn latest_touch(&self) -> Option<ActiveTouchState> {
         *self.latest_touch.lock().unwrap()
+    }
+
+    /// Returns the latest navigation button pressed with timestamp.
+    pub fn latest_nav(&self) -> Option<(NavigationButton, Instant)> {
+        *self.latest_nav.lock().unwrap()
     }
 
     /// Clears expired touch state (e.g. touch older than 800ms).
@@ -119,6 +126,8 @@ impl AndroidInputSubsystem {
                     NavigationButton::Home => "HOME",
                     NavigationButton::Recents => "APP_SWITCH (Recents)",
                 };
+
+                *self.latest_nav.lock().unwrap() = Some((button, Instant::now()));
 
                 self.append_log(&format!(
                     "D/InputReader: [#{}] Hardware navigation button pressed: {} (keyCode={})",

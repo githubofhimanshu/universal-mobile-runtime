@@ -137,6 +137,9 @@ body {
   flex-direction: column;
   background-color: var(--bg-surface);
   flex-shrink: 0;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Dropzone Styling */
@@ -464,19 +467,29 @@ body {
   color: #fff;
 }
 
+.nav-btn:active {
+  background-color: rgba(0, 229, 255, 0.25);
+  color: #00e5ff;
+  transform: scale(0.92);
+}
+
 /* Diagnostics Drawer */
 .diagnostics-drawer {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
 }
 
 .diag-header {
-  padding: 14px 16px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .diag-title-group {
@@ -493,6 +506,7 @@ body {
 .diag-controls {
   display: flex;
   gap: 6px;
+  align-items: center;
 }
 
 .select-filter-sm, .input-search-sm {
@@ -509,13 +523,54 @@ body {
 }
 
 .diag-log-container {
-  flex: 1;
-  overflow-y: auto;
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: scroll;
+  overflow-x: hidden;
   padding: 10px 12px;
   background-color: #0b0d13;
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 1.6;
+}
+
+/* Custom Visible Scrollbar */
+.diag-log-container::-webkit-scrollbar {
+  width: 8px;
+}
+.diag-log-container::-webkit-scrollbar-track {
+  background: #0b0d13;
+}
+.diag-log-container::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 4px;
+}
+.diag-log-container::-webkit-scrollbar-thumb:hover {
+  background: #58a6ff;
+}
+
+/* Float button to resume auto-scroll when user scrolled up */
+.diag-resume-autoscroll {
+  position: absolute;
+  bottom: 16px;
+  right: 20px;
+  background-color: #1f6feb;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 10;
+}
+.diag-resume-autoscroll:hover {
+  background-color: #388bfd;
+  transform: translateY(-2px);
 }
 
 .diag-empty-placeholder {

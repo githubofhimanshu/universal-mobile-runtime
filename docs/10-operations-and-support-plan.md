@@ -83,3 +83,4 @@ flowchart LR
 
 - **Minimum Notice:** A minimum of 6 months notice will be provided prior to deprecating any host OS version, hypervisor backend, or supported app cohort.
 - **Legacy iOS HLE (Track B):** Maintained strictly for vintage 32-bit applications (iPhone OS 2.0–3.1.3). No expansion to modern 64-bit iOS without full architectural review and dedicated ADR.
+

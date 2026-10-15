@@ -150,6 +150,31 @@ impl RuntimeOrchestrator {
         Ok(session.record.state)
     }
 
+    /// Synchronizes accumulated guest logcat / syslog diagnostics into the session report.
+    pub fn sync_diagnostics(&mut self, session_id: &SessionId) -> UmrResult<()> {
+        let session = self.sessions.get_mut(session_id)?;
+        let backend_id = session.backend_id.clone();
+        let record = session.record.clone();
+
+        let diag_lines = if let Some(backend) = self.registry.get_android_mut(&backend_id) {
+            backend.collect_diagnostics(&record).ok()
+        } else if let Some(backend) = self.registry.get_ios_mut(&backend_id) {
+            backend.collect_diagnostics(&record).ok()
+        } else {
+            None
+        };
+
+        if let Some(lines) = diag_lines {
+            if lines.len() > session.log_cursor {
+                for line in &lines[session.log_cursor..] {
+                    session.log(LogLevel::Debug, "guest_logcat", line);
+                }
+                session.log_cursor = lines.len();
+            }
+        }
+        Ok(())
+    }
+
     /// Stops an active application, reaps processes, and collects diagnostics.
     pub fn stop_session(&mut self, session_id: &SessionId) -> UmrResult<()> {
         let session = self.sessions.get_mut(session_id)?;
@@ -159,25 +184,16 @@ impl RuntimeOrchestrator {
         session.log(LogLevel::Info, "orchestrator", "Teardown requested; stopping backend");
 
         let stop_res = if let Some(backend) = self.registry.get_android_mut(&backend_id) {
-            let res = backend.stop(&mut session.record);
-            if let Ok(diag_lines) = backend.collect_diagnostics(&session.record) {
-                for line in diag_lines {
-                    session.log(LogLevel::Debug, "guest_logcat", line);
-                }
-            }
-            res
+            backend.stop(&mut session.record)
         } else if let Some(backend) = self.registry.get_ios_mut(&backend_id) {
-            let res = backend.stop(&mut session.record);
-            if let Ok(diag_lines) = backend.collect_diagnostics(&session.record) {
-                for line in diag_lines {
-                    session.log(LogLevel::Debug, "guest_syslog", line);
-                }
-            }
-            res
+            backend.stop(&mut session.record)
         } else {
             Ok(())
         };
 
+        let _ = self.sync_diagnostics(session_id);
+
+        let session = self.sessions.get_mut(session_id)?;
         match stop_res {
             Ok(()) => {
                 session.record.mark_terminated(0)?;

@@ -270,7 +270,7 @@ impl IAndroidBackend for ReferenceAndroidBackend {
             while is_running.load(Ordering::SeqCst) {
                 thread::sleep(Duration::from_millis(100));
                 tick += 1;
-                if tick % 10 == 0 {
+                if tick % 50 == 0 {
                     if let Ok(mut f) = OpenOptions::new().append(true).open(&log_path) {
                         let _ = writeln!(
                             f,
@@ -375,10 +375,11 @@ impl IAndroidBackend for ReferenceAndroidBackend {
         let input = handle.input.lock().unwrap();
         input.clear_expired_touch(800);
         let touch = input.latest_touch();
+        let nav = input.latest_nav();
         drop(input);
 
         let mut fb_pipe = handle.framebuffer.lock().unwrap();
-        let frame = fb_pipe.render_frame(&handle.package_name, handle.execution_mode, touch);
+        let frame = fb_pipe.render_frame(&handle.package_name, handle.execution_mode, touch, nav);
         Ok(Some(frame))
     }
 

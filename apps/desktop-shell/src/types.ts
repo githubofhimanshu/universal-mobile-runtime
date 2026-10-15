@@ -104,7 +104,8 @@ export type InputEventPayload = PointerEventPayload | KeyEventPayload | Navigati
 export interface DiagnosticEntry {
   timestamp: string;
   level: string;
-  component: string;
+  source?: string;
+  component?: string;
   message: string;
 }
 

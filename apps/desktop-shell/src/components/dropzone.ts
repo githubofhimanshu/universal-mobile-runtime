@@ -37,7 +37,11 @@ export class DropzoneComponent {
               id="dz-path-input" 
               placeholder="Or enter host package path (e.g. tests/fixtures/synthetic-app.apk)" 
             />
-            <button class="btn btn-primary" id="dz-inspect-btn">
+            <input type="file" id="dz-file-picker" accept=".apk,.ipa" style="display: none;" />
+            <button class="btn btn-secondary" id="dz-browse-btn" type="button" style="white-space: nowrap;">
+              📁 Browse...
+            </button>
+            <button class="btn btn-primary" id="dz-inspect-btn" style="white-space: nowrap;">
               ⚡ Inspect & Import
             </button>
           </div>
@@ -52,6 +56,20 @@ export class DropzoneComponent {
     const box = this.container.querySelector('#dropzone-box') as HTMLElement;
     const pathInput = this.container.querySelector('#dz-path-input') as HTMLInputElement;
     const inspectBtn = this.container.querySelector('#dz-inspect-btn') as HTMLElement;
+    const browseBtn = this.container.querySelector('#dz-browse-btn') as HTMLElement;
+    const filePicker = this.container.querySelector('#dz-file-picker') as HTMLInputElement;
+
+    browseBtn.addEventListener('click', () => {
+      filePicker.click();
+    });
+
+    filePicker.addEventListener('change', async () => {
+      if (filePicker.files && filePicker.files.length > 0) {
+        const file = filePicker.files[0];
+        pathInput.value = file.name;
+        await this.uploadAndInspectFile(file);
+      }
+    });
 
     // Drag-over styling
     box.addEventListener('dragover', (e) => {
@@ -69,9 +87,8 @@ export class DropzoneComponent {
 
       if (e.dataTransfer && e.dataTransfer.files.length > 0) {
         const file = e.dataTransfer.files[0];
-        // In browser environments without full FS access, we fallback to file.name or entered path
         pathInput.value = file.name;
-        await this.inspectPath(file.name);
+        await this.uploadAndInspectFile(file);
       }
     });
 
@@ -92,6 +109,43 @@ export class DropzoneComponent {
     });
   }
 
+  private async uploadAndInspectFile(file: File) {
+    const box = this.container.querySelector('#dropzone-box') as HTMLElement;
+    box.classList.add('dropzone-loading');
+    const pathInput = this.container.querySelector('#dz-path-input') as HTMLInputElement;
+
+    try {
+      // 1. Upload file binary to backend
+      const res = await fetch('/upload', {
+        method: 'POST',
+        headers: {
+          'X-Filename': encodeURIComponent(file.name),
+        },
+        body: await file.arrayBuffer(),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Upload failed' }));
+        throw new Error(err.error || 'Failed to upload package to runtime sandbox');
+      }
+
+      const uploadData = await res.json();
+      pathInput.value = uploadData.package_path;
+
+      // 2. Negotiate and inspect uploaded package
+      await this.inspectPath(uploadData.package_path);
+    } catch (err: any) {
+      box.classList.remove('dropzone-loading');
+      if (this.onShowErrorModal) {
+        this.onShowErrorModal('Package Upload & Intake Failed', {
+          error_code: 'ERR_UPLOAD_FAILED',
+          message: err.message || String(err),
+          recommendation: 'Check that the runtime daemon is running and has write permissions to target/umr-sandbox.',
+        });
+      }
+    }
+  }
+
   private async inspectPath(filePath: string) {
     const box = this.container.querySelector('#dropzone-box') as HTMLElement;
     box.classList.add('dropzone-loading');
@@ -106,14 +160,24 @@ export class DropzoneComponent {
       let summary = '';
       let format = meta.format;
 
-      if (meta.details.android) {
-        pkgName = meta.details.android.package_name;
-        name = meta.details.android.main_activity || pkgName;
-        summary = `Android (SDK ${meta.details.android.min_sdk_version || '?'}..${meta.details.android.target_sdk_version || '?'}) • ${meta.details.android.native_abis.join(', ') || 'Pure DEX'}`;
-      } else if (meta.details.ios) {
-        pkgName = meta.details.ios.bundle_identifier;
-        name = pkgName;
-        summary = `iOS (min ${meta.details.ios.minimum_os_version || '?'}) • ${meta.details.ios.architectures.join(', ')}`;
+      const d: any = meta.details || {};
+      const androidInfo = d.android || (d.platform === 'android' ? d : null) || (meta.format === 'apk' ? d : null);
+      const iosInfo = d.ios || (d.platform === 'ios' ? d : null) || (meta.format === 'ipa' ? d : null);
+
+      if (androidInfo && androidInfo.package_name) {
+        pkgName = androidInfo.package_name;
+        const shortName = androidInfo.main_activity || androidInfo.package_name.split('.').pop() || 'App';
+        name = shortName.charAt(0).toUpperCase() + shortName.slice(1);
+        const abis = androidInfo.native_abis && androidInfo.native_abis.length > 0
+          ? androidInfo.native_abis.join(', ')
+          : 'Pure DEX';
+        summary = `Android (SDK ${androidInfo.min_sdk_version || '?'}..${androidInfo.target_sdk_version || '?'}) • ${abis}`;
+      } else if (iosInfo && iosInfo.bundle_identifier) {
+        pkgName = iosInfo.bundle_identifier;
+        const shortName = iosInfo.bundle_identifier.split('.').pop() || 'App';
+        name = shortName.charAt(0).toUpperCase() + shortName.slice(1);
+        const archs = iosInfo.architectures && iosInfo.architectures.join(', ') || 'arm64';
+        summary = `iOS (min ${iosInfo.minimum_os_version || '?'}) • ${archs}`;
       }
 
       let execMode: any = 'local_native';
