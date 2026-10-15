@@ -1,0 +1,23 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/umr-core",
+    "crates/umr-intake-worker",
+    "crates/umr-orchestrator",
+    "crates/umr-backend-reference",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Universal Mobile Runtime Team"]
+license = "Apache-2.0"
+repository = "https://github.com/universal-mobile-runtime"
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+sha2 = "0.10"
+chrono = { version = "0.4", features = ["serde"] }
+
