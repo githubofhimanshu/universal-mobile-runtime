@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::error::{DiagnosticError, ErrorCode, UmrResult};
+use crate::framebuffer::FrameBuffer;
+use crate::input::InputEvent;
 use crate::lifecycle::{LifecycleState, SessionRecord};
 use crate::metadata::{CpuArchitecture, EncryptionStatus, PackageDetails, PackageMetadata, TargetAbi};
 
@@ -59,6 +61,24 @@ pub trait IAndroidBackend: Send + Sync {
     fn poll_status(&self, session: &SessionRecord) -> UmrResult<LifecycleState>;
     fn stop(&mut self, session: &mut SessionRecord) -> UmrResult<()>;
     fn collect_diagnostics(&self, session: &SessionRecord) -> UmrResult<Vec<String>>;
+
+    /// Dispatches an input event (pointer touch, keycode, or navigation) to the active session.
+    fn send_input(&mut self, session: &SessionRecord, event: InputEvent) -> UmrResult<()> {
+        let _ = (session, event);
+        Ok(())
+    }
+
+    /// Captures the latest generated frame buffer from the active session.
+    fn capture_frame(&self, session: &SessionRecord) -> UmrResult<Option<FrameBuffer>> {
+        let _ = session;
+        Ok(None)
+    }
+
+    /// Completely purges user and cache data for the application in this session.
+    fn wipe_storage(&mut self, session: &SessionRecord) -> UmrResult<()> {
+        let _ = session;
+        Ok(())
+    }
 }
 
 /// Abstract contract for iOS execution backends.
@@ -70,6 +90,18 @@ pub trait IIosBackend: Send + Sync {
     fn poll_status(&self, session: &SessionRecord) -> UmrResult<LifecycleState>;
     fn stop(&mut self, session: &mut SessionRecord) -> UmrResult<()>;
     fn collect_diagnostics(&self, session: &SessionRecord) -> UmrResult<Vec<String>>;
+
+    /// Dispatches an input event to the active session.
+    fn send_input(&mut self, session: &SessionRecord, event: InputEvent) -> UmrResult<()> {
+        let _ = (session, event);
+        Ok(())
+    }
+
+    /// Captures the latest generated frame buffer from the active session.
+    fn capture_frame(&self, session: &SessionRecord) -> UmrResult<Option<FrameBuffer>> {
+        let _ = session;
+        Ok(None)
+    }
 }
 
 /// Result of negotiating package requirements against available backends.

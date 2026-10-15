@@ -788,6 +788,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "umr-ipc"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "clap",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 1.0.69",
+ "umr-backend-reference",
+ "umr-core",
+ "umr-orchestrator",
+]
+
+[[package]]
 name = "umr-orchestrator"
 version = "0.1.0"
 dependencies = [

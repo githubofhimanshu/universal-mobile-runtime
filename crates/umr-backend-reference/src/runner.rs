@@ -3,7 +3,7 @@ use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
@@ -11,10 +11,14 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
 use umr_core::{
-    BackendCapabilities, CpuArchitecture, DiagnosticError, ErrorCode, ExecutionMode,
-    IAndroidBackend, LifecycleState, PackageDetails, PackageFormat, PackageMetadata,
-    SessionId, SessionRecord, TargetAbi, UmrResult,
+    BackendCapabilities, CpuArchitecture, DiagnosticError, ErrorCode, ExecutionMode, FrameBuffer,
+    FrameStats, IAndroidBackend, InputEvent, LifecycleState, PackageDetails, PackageFormat,
+    PackageMetadata, SessionId, SessionRecord, TargetAbi, UmrResult,
 };
+
+use crate::framebuffer::{DisplayMetrics, FrameBufferPipeline};
+use crate::input::AndroidInputSubsystem;
+use crate::storage::{AndroidStorageSandbox, StorageUsage};
 
 /// Session configuration written into the isolated sandbox during preparation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,8 +35,13 @@ pub struct SessionSandboxConfig {
 struct ActiveProcessHandle {
     workspace_dir: PathBuf,
     log_file: PathBuf,
+    package_name: String,
+    execution_mode: ExecutionMode,
     is_running: Arc<AtomicBool>,
     worker_thread: Option<JoinHandle<()>>,
+    input: Arc<Mutex<AndroidInputSubsystem>>,
+    storage: Arc<AndroidStorageSandbox>,
+    framebuffer: Arc<Mutex<FrameBufferPipeline>>,
 }
 
 /// Reference Android execution runner implementing `IAndroidBackend`.
@@ -73,6 +82,30 @@ impl ReferenceAndroidBackend {
             sandbox_root: root,
             sessions: HashMap::new(),
         }
+    }
+
+    /// Queries storage usage for an active or prepared session.
+    pub fn get_storage_usage(&self, session_id: &SessionId) -> UmrResult<StorageUsage> {
+        let handle = self.sessions.get(session_id).ok_or_else(|| {
+            DiagnosticError::new(
+                ErrorCode::ErrLifecycleSessionNotFound,
+                format!("Session '{}' not found", session_id),
+            )
+        })?;
+
+        handle.storage.calculate_usage()
+    }
+
+    /// Queries frame pacing and rendering statistics for an active session.
+    pub fn get_frame_stats(&self, session_id: &SessionId) -> UmrResult<FrameStats> {
+        let handle = self.sessions.get(session_id).ok_or_else(|| {
+            DiagnosticError::new(
+                ErrorCode::ErrLifecycleSessionNotFound,
+                format!("Session '{}' not found", session_id),
+            )
+        })?;
+
+        Ok(handle.framebuffer.lock().unwrap().stats())
     }
 }
 
@@ -163,11 +196,29 @@ impl IAndroidBackend for ReferenceAndroidBackend {
         )
         .map_err(io_err)?;
 
+        // Initialize storage sandbox
+        let storage = AndroidStorageSandbox::initialize(
+            &session_dir,
+            &android_info.package_name,
+            &log_file,
+        )?;
+
+        // Initialize input subsystem
+        let input = AndroidInputSubsystem::new(360, 640, &log_file);
+
+        // Initialize framebuffer pipeline
+        let framebuffer = FrameBufferPipeline::new(DisplayMetrics::default());
+
         let handle = ActiveProcessHandle {
             workspace_dir: session_dir,
             log_file,
+            package_name: android_info.package_name.clone(),
+            execution_mode: self.capabilities.execution_mode,
             is_running: Arc::new(AtomicBool::new(false)),
             worker_thread: None,
+            input: Arc::new(Mutex::new(input)),
+            storage: Arc::new(storage),
+            framebuffer: Arc::new(Mutex::new(framebuffer)),
         };
 
         self.sessions.insert(session.session_id.clone(), handle);
@@ -300,6 +351,46 @@ impl IAndroidBackend for ReferenceAndroidBackend {
         }
 
         Ok(lines)
+    }
+
+    fn send_input(&mut self, session: &SessionRecord, event: InputEvent) -> UmrResult<()> {
+        let handle = self.sessions.get(&session.session_id).ok_or_else(|| {
+            DiagnosticError::new(
+                ErrorCode::ErrLifecycleSessionNotFound,
+                format!("Session '{}' not found", session.session_id),
+            )
+        })?;
+
+        handle.input.lock().unwrap().dispatch(event)
+    }
+
+    fn capture_frame(&self, session: &SessionRecord) -> UmrResult<Option<FrameBuffer>> {
+        let handle = self.sessions.get(&session.session_id).ok_or_else(|| {
+            DiagnosticError::new(
+                ErrorCode::ErrLifecycleSessionNotFound,
+                format!("Session '{}' not found", session.session_id),
+            )
+        })?;
+
+        let input = handle.input.lock().unwrap();
+        input.clear_expired_touch(800);
+        let touch = input.latest_touch();
+        drop(input);
+
+        let mut fb_pipe = handle.framebuffer.lock().unwrap();
+        let frame = fb_pipe.render_frame(&handle.package_name, handle.execution_mode, touch);
+        Ok(Some(frame))
+    }
+
+    fn wipe_storage(&mut self, session: &SessionRecord) -> UmrResult<()> {
+        let handle = self.sessions.get(&session.session_id).ok_or_else(|| {
+            DiagnosticError::new(
+                ErrorCode::ErrLifecycleSessionNotFound,
+                format!("Session '{}' not found", session.session_id),
+            )
+        })?;
+
+        handle.storage.wipe()
     }
 }
 

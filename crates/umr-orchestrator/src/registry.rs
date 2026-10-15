@@ -37,9 +37,21 @@ impl BackendRegistry {
             .find(|b| b.id() == id)
     }
 
+    pub fn get_android(&self, id: &str) -> Option<&Box<dyn IAndroidBackend>> {
+        self.android_backends
+            .iter()
+            .find(|b| b.id() == id)
+    }
+
     pub fn get_ios_mut(&mut self, id: &str) -> Option<&mut Box<dyn IIosBackend>> {
         self.ios_backends
             .iter_mut()
+            .find(|b| b.id() == id)
+    }
+
+    pub fn get_ios(&self, id: &str) -> Option<&Box<dyn IIosBackend>> {
+        self.ios_backends
+            .iter()
             .find(|b| b.id() == id)
     }
 
