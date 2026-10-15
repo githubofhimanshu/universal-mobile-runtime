@@ -48,9 +48,10 @@ export class ModalManager {
     this.attachCloseHandlers();
   }
 
-  showInspectModal(app: AppEntry, neg: NegotiationResult, meta: PackageMetadata) {
-    const androidInfo = meta.details.android;
-    const iosInfo = meta.details.ios;
+  showInspectModal(app: AppEntry, neg: NegotiationResult, meta: PackageMetadata, onLaunch?: (app: AppEntry) => void) {
+    const d: any = meta.details || {};
+    const androidInfo = d.android || (d.platform === 'android' ? d : null) || (meta.format === 'apk' ? d : null);
+    const iosInfo = d.ios || (d.platform === 'ios' ? d : null) || (meta.format === 'ipa' ? d : null);
 
     let negContent = '';
     if (neg.result === 'compatible') {
@@ -105,7 +106,7 @@ export class ModalManager {
                   androidInfo
                     ? `
                   <tr><td>Min / Target SDK</td><td>API ${androidInfo.min_sdk_version || '?'} .. API ${androidInfo.target_sdk_version || '?'}</td></tr>
-                  <tr><td>Native ABIs</td><td><code>${androidInfo.native_abis.join(', ') || 'Pure DEX (No native code)'}</code></td></tr>
+                  <tr><td>Native ABIs</td><td><code>${androidInfo.native_abis?.join(', ') || 'Pure DEX (No native code)'}</code></td></tr>
                   <tr><td>Main Activity</td><td><code>${androidInfo.main_activity || 'Default'}</code></td></tr>
                 `
                     : ''
@@ -115,8 +116,8 @@ export class ModalManager {
                     ? `
                   <tr><td>Bundle Identifier</td><td><code>${iosInfo.bundle_identifier}</code></td></tr>
                   <tr><td>Minimum OS Version</td><td>iOS ${iosInfo.minimum_os_version || '?'}</td></tr>
-                  <tr><td>Architectures</td><td><code>${iosInfo.architectures.join(', ')}</code></td></tr>
-                  <tr><td>FairPlay DRM Status</td><td>${iosInfo.encryption.status}</td></tr>
+                  <tr><td>Architectures</td><td><code>${iosInfo.architectures?.join(', ') || 'arm64'}</code></td></tr>
+                  <tr><td>FairPlay DRM Status</td><td>${iosInfo.encryption?.status || 'Unencrypted'}</td></tr>
                   <tr><td>Simulator Build</td><td>${iosInfo.is_simulator_build ? 'Yes' : 'No'}</td></tr>
                 `
                     : ''
@@ -125,14 +126,43 @@ export class ModalManager {
             </div>
           </div>
 
-          <div class="modal-footer">
-            <button class="btn btn-primary" id="modal-confirm-btn">Close</button>
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+            <button class="btn btn-outline" id="modal-confirm-btn">Close</button>
+            ${
+              neg.result === 'compatible' && onLaunch
+                ? `<button class="btn btn-primary" id="modal-launch-btn">▶ Launch Application</button>`
+                : ''
+            }
           </div>
         </div>
       </div>
     `;
 
-    this.attachCloseHandlers();
+    this.attachInspectCloseHandlers(onLaunch, app);
+  }
+
+  private attachInspectCloseHandlers(onLaunch?: (app: AppEntry) => void, app?: AppEntry) {
+    const closeBtn = this.container.querySelector('#modal-close');
+    const confirmBtn = this.container.querySelector('#modal-confirm-btn');
+    const launchBtn = this.container.querySelector('#modal-launch-btn');
+    const backdrop = this.container.querySelector('.modal-backdrop');
+
+    const close = () => {
+      this.container.innerHTML = '';
+    };
+
+    closeBtn?.addEventListener('click', close);
+    confirmBtn?.addEventListener('click', close);
+    backdrop?.addEventListener('click', (e) => {
+      if (e.target === backdrop) close();
+    });
+
+    if (launchBtn && onLaunch && app) {
+      launchBtn.addEventListener('click', () => {
+        close();
+        onLaunch(app);
+      });
+    }
   }
 
   private attachCloseHandlers() {

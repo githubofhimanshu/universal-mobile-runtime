@@ -160,14 +160,24 @@ export class DropzoneComponent {
       let summary = '';
       let format = meta.format;
 
-      if (meta.details.android) {
-        pkgName = meta.details.android.package_name;
-        name = meta.details.android.main_activity || pkgName;
-        summary = `Android (SDK ${meta.details.android.min_sdk_version || '?'}..${meta.details.android.target_sdk_version || '?'}) • ${meta.details.android.native_abis.join(', ') || 'Pure DEX'}`;
-      } else if (meta.details.ios) {
-        pkgName = meta.details.ios.bundle_identifier;
-        name = pkgName;
-        summary = `iOS (min ${meta.details.ios.minimum_os_version || '?'}) • ${meta.details.ios.architectures.join(', ')}`;
+      const d: any = meta.details || {};
+      const androidInfo = d.android || (d.platform === 'android' ? d : null) || (meta.format === 'apk' ? d : null);
+      const iosInfo = d.ios || (d.platform === 'ios' ? d : null) || (meta.format === 'ipa' ? d : null);
+
+      if (androidInfo && androidInfo.package_name) {
+        pkgName = androidInfo.package_name;
+        const shortName = androidInfo.main_activity || androidInfo.package_name.split('.').pop() || 'App';
+        name = shortName.charAt(0).toUpperCase() + shortName.slice(1);
+        const abis = androidInfo.native_abis && androidInfo.native_abis.length > 0
+          ? androidInfo.native_abis.join(', ')
+          : 'Pure DEX';
+        summary = `Android (SDK ${androidInfo.min_sdk_version || '?'}..${androidInfo.target_sdk_version || '?'}) • ${abis}`;
+      } else if (iosInfo && iosInfo.bundle_identifier) {
+        pkgName = iosInfo.bundle_identifier;
+        const shortName = iosInfo.bundle_identifier.split('.').pop() || 'App';
+        name = shortName.charAt(0).toUpperCase() + shortName.slice(1);
+        const archs = iosInfo.architectures && iosInfo.architectures.join(', ') || 'arm64';
+        summary = `iOS (min ${iosInfo.minimum_os_version || '?'}) • ${archs}`;
       }
 
       let execMode: any = 'local_native';
