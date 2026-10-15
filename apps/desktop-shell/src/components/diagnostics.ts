@@ -131,6 +131,7 @@ export class DiagnosticsComponent {
   private autoScroll: boolean = true;
   private isDrawerOpen: boolean = true;
   private isWideMode: boolean = false;
+  private isWrapMode: boolean = false;
 
   constructor(container: HTMLElement, client: UMRClient) {
     this.container = container;
@@ -229,6 +230,9 @@ export class DiagnosticsComponent {
               <button class="diag-search-clear" id="diag-search-clear" style="display: none;" title="Clear search">✕</button>
             </div>
 
+            <button class="btn btn-sm btn-outline" id="diag-wrap-toggle" title="Toggle line wrap (Horizontal scrolling)">
+              ↔ No Wrap
+            </button>
             <button class="btn btn-sm btn-outline" id="diag-autoscroll-toggle" title="Toggle automatic scrolling">
               ⚡ Auto-Scroll: ON
             </button>
@@ -350,6 +354,18 @@ export class DiagnosticsComponent {
       }
     });
 
+    const wrapToggleBtn = this.container.querySelector('#diag-wrap-toggle') as HTMLElement;
+    wrapToggleBtn?.addEventListener('click', () => {
+      this.isWrapMode = !this.isWrapMode;
+      list.classList.toggle('diag-wrap-mode', this.isWrapMode);
+      if (wrapToggleBtn) {
+        wrapToggleBtn.textContent = this.isWrapMode ? '↩ Wrapped' : '↔ No Wrap';
+        wrapToggleBtn.title = this.isWrapMode
+          ? 'Lines are wrapped onto multiple lines (Click for horizontal scrolling)'
+          : 'Lines preserved on single line with horizontal scrolling (Click to wrap)';
+      }
+    });
+
     autoScrollBtn?.addEventListener('click', () => {
       this.autoScroll = !this.autoScroll;
       this.updateAutoScrollBtn();
@@ -424,6 +440,9 @@ export class DiagnosticsComponent {
     this.updateTelemetry();
 
     const previousScrollTop = list.scrollTop;
+    const previousScrollLeft = list.scrollLeft;
+
+    list.classList.toggle('diag-wrap-mode', this.isWrapMode);
 
     // Parse all entries
     const parsedEntries = this.logs.map((entry) => ({
@@ -546,6 +565,7 @@ export class DiagnosticsComponent {
     } else {
       list.scrollTop = previousScrollTop;
     }
+    list.scrollLeft = previousScrollLeft;
   }
 
   private updateTelemetry() {

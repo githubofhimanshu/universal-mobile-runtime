@@ -706,24 +706,29 @@ body {
   opacity: 0.6;
 }
 
-/* Diagnostics Log Area */
+/* Diagnostics Log Area with Horizontal & Vertical Scrolling */
 .diag-log-container {
   flex: 1 1 0%;
   min-height: 0;
-  overflow-y: scroll;
-  overflow-x: hidden;
+  overflow-y: auto;
+  overflow-x: auto;
   padding: 8px 10px;
   background-color: #07090e;
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 1.5;
+  scrollbar-gutter: stable;
 }
 
-/* Custom Visible Scrollbar */
+/* Custom Visible Scrollbar (Both Vertical and Horizontal) */
 .diag-log-container::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 .diag-log-container::-webkit-scrollbar-track {
+  background: #07090e;
+}
+.diag-log-container::-webkit-scrollbar-corner {
   background: #07090e;
 }
 .diag-log-container::-webkit-scrollbar-thumb {
@@ -786,16 +791,18 @@ body {
   line-height: 1.5;
 }
 
-/* Log Rows */
+/* Log Rows - Preserves single-line integrity for horizontal scrolling */
 .diag-log-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 6px;
   padding: 2.5px 6px;
   border-radius: 4px;
   position: relative;
   transition: background-color 0.1s ease;
-  word-break: break-all;
+  width: max-content;
+  min-width: 100%;
+  white-space: nowrap;
 }
 
 .diag-log-row:hover {
@@ -818,7 +825,7 @@ body {
   width: 52px;
   flex-shrink: 0;
   user-select: none;
-  padding-top: 1px;
+  white-space: nowrap;
 }
 
 .log-prio {
@@ -830,6 +837,7 @@ body {
   border-radius: 3px;
   padding: 1px 2px;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .diag-level-verbose { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
@@ -845,9 +853,6 @@ body {
   padding: 1px 6px;
   border-radius: 4px;
   flex-shrink: 0;
-  max-width: 130px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.3;
 }
@@ -861,26 +866,42 @@ body {
 .tag-teal { background: rgba(45, 212, 191, 0.15); color: #2dd4bf; border: 1px solid rgba(45, 212, 191, 0.3); }
 
 .diag-msg-body {
-  flex: 1 1 0%;
+  flex: 1 1 auto;
   min-width: 0;
   color: #e2e8f0;
+  white-space: nowrap;
+  word-break: normal;
+}
+
+/* Optional Soft Wrap Mode Override */
+.diag-log-container.diag-wrap-mode .diag-log-row {
+  width: 100%;
+  white-space: normal;
+  word-break: break-all;
+  align-items: flex-start;
+}
+.diag-log-container.diag-wrap-mode .diag-msg-body {
+  white-space: normal;
   word-break: break-all;
 }
 
-/* Row 1-Click Copy Button */
+/* Row 1-Click Copy Button - Sticky so it is always accessible on hover */
 .diag-row-copy-btn {
   opacity: 0;
-  background: rgba(30, 41, 59, 0.85);
+  background: rgba(30, 41, 59, 0.9);
   border: 1px solid #475569;
   border-radius: 4px;
   color: #94a3b8;
   font-size: 10px;
   cursor: pointer;
-  padding: 1px 4px;
+  padding: 1px 5px;
   line-height: 1;
   transition: opacity 0.15s ease, background 0.15s ease;
   flex-shrink: 0;
   margin-left: auto;
+  position: sticky;
+  right: 8px;
+  z-index: 2;
 }
 
 .diag-log-row:hover .diag-row-copy-btn {
