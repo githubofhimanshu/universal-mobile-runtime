@@ -9,10 +9,11 @@ export class ModalManager {
   }
 
   showErrorModal(title: string, error: any) {
-    const code = error?.code || error?.rpcError?.code || 'ERR_UNKNOWN';
-    const message = error?.message || (typeof error === 'string' ? error : JSON.stringify(error));
-    const suggestion = error?.suggestion || 'Review package integrity and host configuration.';
-    const context = error?.context || '';
+    const errData = error?.rpcError?.data || error?.data || error;
+    const code = errData?.error_code || error?.error_code || error?.code || error?.rpcError?.code || 'ERR_UNKNOWN';
+    const message = errData?.message || error?.message || (typeof error === 'string' ? error : JSON.stringify(error));
+    const suggestion = errData?.suggestion || errData?.recommendation || error?.suggestion || error?.recommendation || 'Review package integrity and host configuration.';
+    const context = errData?.context || error?.context || '';
 
     this.container.innerHTML = `
       <div class="modal-backdrop">
