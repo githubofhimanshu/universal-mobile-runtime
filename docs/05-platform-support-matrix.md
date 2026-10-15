@@ -48,6 +48,14 @@ Update this file only from reproducible tests or clearly labelled manual results
 | `TEST-P4-REM-01` | `com.modern.metalapp` | IPA | Windows / Linux / macOS | `umr-backend-ios` 0.2.0 | `RemoteStream` | **Verified** | Track C: Tethered device bridge, mandatory `RemoteStream` labeling & watermarked frames (2026-10-15) |
 | `TEST-P4-NEG-01` | `tiered-ios-negotiation` | Policy | All Desktop Hosts | `umr-core` 0.1.0 | Multiple | **Verified** | Capability routing: Track A (macOS sim), Track B (32-bit), Track C (modern), DRM rejection (2026-10-15) |
 | `TEST-P4-IPC-01` | `umr-ipc-phase4-extensions` | JSON-RPC | Windows 11 / x86-64 | `umr-ipc` 0.1.0 | `LocalNative` | **Verified** | `umr.ios.gap_report` endpoint and tiered iOS backend registrations (2026-10-15) |
+| `TEST-P5-CAT-01` | `curated-catalog-manifest` | Manifest | All Desktop Hosts | `umr-distribution` 0.1.0 | `LocalNative` | **Verified** | Curated catalog manifest query, publisher registry, and multi-criteria filter search (2026-10-15) |
+| `TEST-P5-SIG-01` | `package-provenance-verifier` | Crypto | All Desktop Hosts | `umr-distribution` 0.1.0 | `LocalNative` | **Verified** | Cryptographic SHA-256 digest calculation & publisher signature validation (2026-10-15) |
+| `TEST-P5-DOWN-01` | `anti-downgrade-guard` | Security | All Desktop Hosts | `umr-distribution` 0.1.0 | `LocalNative` | **Verified** | Monotonic versioning enforcement rejecting rollback/downgrade attacks (2026-10-15) |
+| `TEST-P5-LIC-01` | `licensing-and-compliance` | Legal/Policy | All Desktop Hosts | `umr-distribution` 0.1.0 | `LocalNative` | **Verified** | User EULA acceptance ledger, FairPlay DRM rejection & open-source attribution notices (2026-10-15) |
+| `TEST-P5-PRIV-01` | `remote-privacy-gate` | Privacy | All Desktop Hosts | `umr-distribution` 0.1.0 | `RemoteStream` | **Verified** | Mandatory user consent gating for Track C and UI watermark labeling enforcement (2026-10-15) |
+| `TEST-P5-SAN-01` | `support-report-scrubber` | Diagnostics | All Desktop Hosts | `umr-distribution` 0.1.0 | `LocalNative` | **Verified** | Automated redaction of secrets, tokens, passwords, private keys, emails, and home paths (2026-10-15) |
+| `TEST-P5-IPC-01` | `umr-ipc-phase5-extensions` | JSON-RPC | Windows 11 / x86-64 | `umr-ipc` 0.1.0 | `LocalNative` | **Verified** | `umr.catalog.*`, `umr.provenance.*`, `umr.privacy.*`, `umr.license.*`, `umr.support.*` (2026-10-15) |
+
 
 ## Required cohorts
 

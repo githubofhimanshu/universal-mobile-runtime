@@ -797,6 +797,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "umr-distribution"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+ "umr-core",
+]
+
+[[package]]
 name = "umr-intake-worker"
 version = "0.1.0"
 dependencies = [
@@ -826,6 +839,7 @@ dependencies = [
  "umr-backend-ios",
  "umr-backend-reference",
  "umr-core",
+ "umr-distribution",
  "umr-orchestrator",
 ]
 

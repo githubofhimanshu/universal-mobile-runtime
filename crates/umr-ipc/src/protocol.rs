@@ -206,3 +206,50 @@ pub struct FrameDataResponse {
     pub base64_rgba: String,
 }
 
+/// Parameters for `umr.catalog.get`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CatalogGetParams {
+    pub app_id: String,
+}
+
+/// Parameters for `umr.provenance.verify`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VerifyProvenanceParams {
+    pub package_path: String,
+    pub publisher_id: String,
+    pub signature: String,
+    pub version_code: u64,
+}
+
+/// Parameters for `umr.privacy.get_consent`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GetConsentParams {
+    pub host_endpoint: String,
+}
+
+/// Parameters for `umr.privacy.record_consent`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecordConsentParams {
+    pub user_id: String,
+    pub host_endpoint: String,
+    pub allow_input_streaming: bool,
+    pub allow_frame_streaming: bool,
+}
+
+/// Parameters for `umr.license.accept`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LicenseAcceptParams {
+    pub app_id: String,
+    pub version: String,
+    pub license_type: String,
+    pub terms_text: String,
+}
+
+/// Parameters for `umr.support.generate_report`.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GenerateSupportReportParams {
+    pub host_os: Option<String>,
+    pub host_cpu: Option<String>,
+    pub logs: Option<Vec<String>>,
+}
+
