@@ -270,7 +270,7 @@ impl IAndroidBackend for ReferenceAndroidBackend {
             while is_running.load(Ordering::SeqCst) {
                 thread::sleep(Duration::from_millis(100));
                 tick += 1;
-                if tick % 10 == 0 {
+                if tick % 50 == 0 {
                     if let Ok(mut f) = OpenOptions::new().append(true).open(&log_path) {
                         let _ = writeln!(
                             f,

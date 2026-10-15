@@ -50,6 +50,7 @@ export class DiagnosticsComponent {
           <div class="diag-controls">
             <select class="select-filter-sm" id="diag-level-filter">
               <option value="all">All Levels</option>
+              <option value="lifecycle">Activity & Input (Hide Ticks)</option>
               <option value="debug">Debug / Verbose</option>
               <option value="info">Info</option>
               <option value="warn">Warnings</option>
@@ -169,12 +170,21 @@ export class DiagnosticsComponent {
     const previousScrollTop = list.scrollTop;
 
     const filtered = this.logs.filter((entry) => {
-      const matchLevel =
-        this.filterLevel === 'all' || entry.level.toLowerCase() === this.filterLevel;
+      const comp = entry.source || entry.component || 'guest';
+      const isTick = entry.message.includes('Frame render tick:');
+
+      let matchLevel = true;
+      if (this.filterLevel === 'lifecycle') {
+        matchLevel = !isTick;
+      } else if (this.filterLevel !== 'all') {
+        matchLevel = entry.level.toLowerCase() === this.filterLevel;
+      }
+
       const matchQuery =
         !this.searchQuery ||
-        entry.component.toLowerCase().includes(this.searchQuery) ||
+        comp.toLowerCase().includes(this.searchQuery) ||
         entry.message.toLowerCase().includes(this.searchQuery);
+
       return matchLevel && matchQuery;
     });
 
@@ -188,12 +198,13 @@ export class DiagnosticsComponent {
         const time = new Date(entry.timestamp).toLocaleTimeString();
         const levelClass = `log-level-${entry.level.toLowerCase()}`;
         const sanitizedMsg = this.highlightRedactions(entry.message);
+        const comp = entry.source || entry.component || 'guest';
 
         return `
           <div class="diag-log-row">
             <span class="log-time">${time}</span>
             <span class="log-level ${levelClass}">[${entry.level.toUpperCase()}]</span>
-            <span class="log-comp">${entry.component}:</span>
+            <span class="log-comp">${comp}:</span>
             <span class="log-msg">${sanitizedMsg}</span>
           </div>
         `;
