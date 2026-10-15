@@ -216,6 +216,38 @@ Connection: close\r\n\
     }
 
     #[test]
+    fn test_http_server_upload_flow() {
+        let handler = setup_test_handler();
+        let mut server = HttpServer::start(handler, 0).expect("Start HTTP server on port 0");
+        let port = server.port();
+
+        let mut stream = TcpStream::connect(format!("127.0.0.1:{}", port)).expect("Connect to HTTP server");
+        let payload = b"PK\x03\x04synthetic-uploaded-apk-bytes";
+        let http_req = format!(
+            "POST /upload HTTP/1.1\r\n\
+Host: 127.0.0.1:{}\r\n\
+Content-Type: application/octet-stream\r\n\
+X-Filename: my_test_app.apk\r\n\
+Content-Length: {}\r\n\
+Connection: close\r\n\
+\r\n",
+            port,
+            payload.len()
+        );
+        stream.write_all(http_req.as_bytes()).unwrap();
+        stream.write_all(payload).unwrap();
+
+        let mut response_buf = String::new();
+        stream.read_to_string(&mut response_buf).unwrap();
+
+        assert!(response_buf.contains("200 OK"));
+        assert!(response_buf.contains("\"status\":\"uploaded\""));
+        assert!(response_buf.contains("my_test_app.apk"));
+
+        server.stop();
+    }
+
+    #[test]
     fn test_rpc_host_capabilities() {
         let handler = setup_test_handler();
         let raw_req = r#"{"jsonrpc":"2.0","id":100,"method":"umr.host.capabilities"}"#;
