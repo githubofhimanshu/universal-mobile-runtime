@@ -3,7 +3,10 @@ use std::process::exit;
 use std::sync::{Arc, Mutex};
 
 use clap::Parser;
+use umr_core::{IAndroidBackend, IIosBackend};
 
+use umr_backend_android::AndroidVirtualizationBackend;
+use umr_backend_ios::{IosHleBackend, IosRemoteStreamBackend, IosSimulatorBackend};
 use umr_backend_reference::ReferenceAndroidBackend;
 use umr_ipc::{run_stdio_server, HttpServer, RpcHandler};
 use umr_orchestrator::{find_intake_binary, RuntimeOrchestrator};
@@ -42,10 +45,34 @@ fn main() {
 
     let mut orch = RuntimeOrchestrator::new(intake_bin);
     // Register reference Android backend
-    let backend = ReferenceAndroidBackend::new(&cli.sandbox);
-    orch.register_android(Box::new(backend));
+    let ref_backend = ReferenceAndroidBackend::new(&cli.sandbox);
+    orch.register_android(Box::new(ref_backend));
 
-    let handler = Arc::new(RpcHandler::new(Arc::new(Mutex::new(orch))));
+    // Register production Android virtualization backend
+    match AndroidVirtualizationBackend::new_auto(&cli.sandbox) {
+        Ok(virt_backend) => {
+            println!("[umr-ipc] Registered virtualization backend: {}", virt_backend.id());
+            orch.register_android(Box::new(virt_backend));
+        }
+        Err(err) => {
+            eprintln!("[umr-ipc] Warning: Virtualization backend unavailable: {}", err);
+        }
+    }
+
+    // Register iOS tiered backends
+    let sim_backend = IosSimulatorBackend::new(&cli.sandbox);
+    println!("[umr-ipc] Registered iOS backend: {}", sim_backend.id());
+    orch.register_ios(Box::new(sim_backend));
+
+    let hle_backend = IosHleBackend::new(&cli.sandbox);
+    println!("[umr-ipc] Registered iOS backend: {}", hle_backend.id());
+    orch.register_ios(Box::new(hle_backend));
+
+    let remote_backend = IosRemoteStreamBackend::new();
+    println!("[umr-ipc] Registered iOS backend: {}", remote_backend.id());
+    orch.register_ios(Box::new(remote_backend));
+
+    let handler = Arc::new(RpcHandler::with_sandbox(Arc::new(Mutex::new(orch)), cli.sandbox.clone()));
 
     if cli.stdio {
         eprintln!("[umr-ipc] Running in STDIO mode...");

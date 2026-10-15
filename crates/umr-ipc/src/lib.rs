@@ -214,4 +214,146 @@ Connection: close\r\n\
 
         server.stop();
     }
+
+    #[test]
+    fn test_rpc_host_capabilities() {
+        let handler = setup_test_handler();
+        let raw_req = r#"{"jsonrpc":"2.0","id":100,"method":"umr.host.capabilities"}"#;
+        let resp_str = handler.handle_raw_message(raw_req);
+        let resp: Value = serde_json::from_str(&resp_str).unwrap();
+        assert_eq!(resp["jsonrpc"], "2.0");
+        assert_eq!(resp["id"], 100);
+        assert!(resp["result"]["host_os"].is_string());
+        assert!(resp["result"]["logical_cpu_cores"].as_u64().unwrap() > 0);
+        assert!(resp["result"]["supported_guest_abis"].is_array());
+    }
+
+    #[test]
+    fn test_rpc_package_management() {
+        let sandbox = tempdir().unwrap();
+        let orch = RuntimeOrchestrator::new(PathBuf::from("mock-worker")).with_macos_override(false);
+        let handler = Arc::new(RpcHandler::with_sandbox(Arc::new(Mutex::new(orch)), sandbox.path().to_path_buf()));
+
+        // 1. List packages (initially empty)
+        let list_req = r#"{"jsonrpc":"2.0","id":101,"method":"umr.packages.list"}"#;
+        let list_resp_str = handler.handle_raw_message(list_req);
+        let list_resp: Value = serde_json::from_str(&list_resp_str).unwrap();
+        assert_eq!(list_resp["result"].as_array().unwrap().len(), 0);
+
+        // 2. Pre-populate a package in catalog
+        let mut mgr = umr_backend_android::AndroidPackageManager::new(sandbox.path()).unwrap();
+        let pkg = umr_core::PackageMetadata {
+            format: umr_core::PackageFormat::Apk,
+            file_path: "/sample/app.apk".to_string(),
+            file_size_bytes: 2048,
+            sha256_hash: "mockhash".to_string(),
+            details: umr_core::PackageDetails::Android(umr_core::AndroidPackageInfo {
+                package_name: "org.umr.catalog.test".to_string(),
+                version_code: Some(1),
+                version_name: Some("1.0".to_string()),
+                min_sdk_version: Some(21),
+                target_sdk_version: Some(34),
+                main_activity: Some("MainActivity".to_string()),
+                native_abis: vec![umr_core::TargetAbi::X86_64],
+                is_pure_dex: false,
+            }),
+            inspected_at: chrono::Utc::now(),
+        };
+        mgr.install_package(&pkg).unwrap();
+
+        // 3. List packages again (now has 1)
+        let list_resp_str2 = handler.handle_raw_message(list_req);
+        let list_resp2: Value = serde_json::from_str(&list_resp_str2).unwrap();
+        assert_eq!(list_resp2["result"].as_array().unwrap().len(), 1);
+        assert_eq!(list_resp2["result"][0]["package_name"], "org.umr.catalog.test");
+
+        // 4. Uninstall package via RPC
+        let uninst_req = r#"{"jsonrpc":"2.0","id":102,"method":"umr.packages.uninstall","params":{"package_name":"org.umr.catalog.test"}}"#;
+        let uninst_resp_str = handler.handle_raw_message(uninst_req);
+        let uninst_resp: Value = serde_json::from_str(&uninst_resp_str).unwrap();
+        assert_eq!(uninst_resp["result"]["status"], "uninstalled");
+
+        // 5. Verify catalog empty again
+        let list_resp_str3 = handler.handle_raw_message(list_req);
+        let list_resp3: Value = serde_json::from_str(&list_resp_str3).unwrap();
+        assert_eq!(list_resp3["result"].as_array().unwrap().len(), 0);
+    }
+
+    #[test]
+    fn test_rpc_ios_gap_report_error_path() {
+        let handler = setup_test_handler();
+        let raw_req = r#"{"jsonrpc":"2.0","id":103,"method":"umr.ios.gap_report","params":{"package_path":"/nonexistent/app.ipa"}}"#;
+        let resp_str = handler.handle_raw_message(raw_req);
+        let resp: Value = serde_json::from_str(&resp_str).unwrap();
+        assert_eq!(resp["jsonrpc"], "2.0");
+        assert_eq!(resp["id"], 103);
+        assert!(resp["error"].is_object());
+    }
+
+    #[test]
+    fn test_rpc_catalog_and_privacy_and_support_report() {
+        let handler = setup_test_handler();
+
+        // 1. umr.catalog.list
+        let cat_req = r#"{"jsonrpc":"2.0","id":201,"method":"umr.catalog.list"}"#;
+        let cat_resp_str = handler.handle_raw_message(cat_req);
+        let cat_resp: Value = serde_json::from_str(&cat_resp_str).unwrap();
+        assert_eq!(cat_resp["id"], 201);
+        let list = cat_resp["result"].as_array().expect("result array");
+        assert_eq!(list.len(), 2);
+
+        // 2. umr.catalog.get
+        let get_req = r#"{"jsonrpc":"2.0","id":202,"method":"umr.catalog.get","params":{"app_id":"com.umr.sample.calculator"}}"#;
+        let get_resp_str = handler.handle_raw_message(get_req);
+        let get_resp: Value = serde_json::from_str(&get_resp_str).unwrap();
+        assert_eq!(get_resp["id"], 202);
+        assert_eq!(get_resp["result"]["name"], "Universal Calculator");
+
+        // 3. umr.privacy.get_consent (initial false)
+        let endpoint = "https://remote-runner.corp:9000";
+        let check_req = format!(r#"{{"jsonrpc":"2.0","id":203,"method":"umr.privacy.get_consent","params":{{"host_endpoint":"{}"}}}}"#, endpoint);
+        let check_resp_str = handler.handle_raw_message(&check_req);
+        let check_resp: Value = serde_json::from_str(&check_resp_str).unwrap();
+        assert_eq!(check_resp["result"]["consented"], false);
+
+        // 4. umr.privacy.record_consent (record true)
+        let record_req = format!(
+            r#"{{"jsonrpc":"2.0","id":204,"method":"umr.privacy.record_consent","params":{{"user_id":"test_operator","host_endpoint":"{}","allow_input_streaming":true,"allow_frame_streaming":true}}}}"#,
+            endpoint
+        );
+        let record_resp_str = handler.handle_raw_message(&record_req);
+        let record_resp: Value = serde_json::from_str(&record_resp_str).unwrap();
+        assert_eq!(record_resp["id"], 204);
+        assert_eq!(record_resp["result"]["allow_input_streaming"], true);
+
+        // 5. umr.privacy.get_consent (now true)
+        let check_resp_str2 = handler.handle_raw_message(&check_req);
+        let check_resp2: Value = serde_json::from_str(&check_resp_str2).unwrap();
+        assert_eq!(check_resp2["result"]["consented"], true);
+
+        // 6. umr.support.generate_report (with redaction verification)
+        let report_req = r#"{"jsonrpc":"2.0","id":205,"method":"umr.support.generate_report","params":{"host_os":"windows","host_cpu":"x86_64","logs":["Auth token Bearer eyJSecretToken12345 leaked!"]}}"#;
+        let report_resp_str = handler.handle_raw_message(report_req);
+        let report_resp: Value = serde_json::from_str(&report_resp_str).unwrap();
+        assert_eq!(report_resp["id"], 205);
+        let sanitized = report_resp["result"]["sanitized_logs"][0].as_str().unwrap();
+        assert!(!sanitized.contains("eyJSecretToken12345"));
+        assert!(sanitized.contains("Bearer [REDACTED_SECRET]"));
+
+        // 7. umr.license.accept
+        let lic_req = r#"{"jsonrpc":"2.0","id":206,"method":"umr.license.accept","params":{"app_id":"com.example.app","version":"1.0","license_type":"Apache-2.0","terms_text":"Terms and conditions text..."}}"#;
+        let lic_resp_str = handler.handle_raw_message(lic_req);
+        let lic_resp: Value = serde_json::from_str(&lic_resp_str).unwrap();
+        assert_eq!(lic_resp["id"], 206);
+        assert_eq!(lic_resp["result"]["user_consent"], true);
+
+        // 8. umr.license.attributions
+        let attr_req = r#"{"jsonrpc":"2.0","id":207,"method":"umr.license.attributions"}"#;
+        let attr_resp_str = handler.handle_raw_message(attr_req);
+        let attr_resp: Value = serde_json::from_str(&attr_resp_str).unwrap();
+        assert_eq!(attr_resp["id"], 207);
+        let attrs = attr_resp["result"].as_array().expect("attributions array");
+        assert!(!attrs.is_empty());
+    }
 }
+

@@ -36,6 +36,26 @@ Update this file only from reproducible tests or clearly labelled manual results
 | `TEST-P2-STG-01` | `android-storage-sandbox` | Sandbox | Windows 11 / x86-64 | `android-reference-backend` 0.1.0 | `LocalNative` | **Verified** | Segmented `/data/data/<pkg>` and `/sdcard/` with verified wipe (2026-10-15) |
 | `TEST-P2-FB-01` | `android-framebuffer-pipe` | RGBA8888 | Windows 11 / x86-64 | `android-reference-backend` 0.1.0 | `LocalNative` | **Verified** | 60 FPS RGBA8888 compositor with status bar, touch indicator & nav bar (2026-10-15) |
 | `TEST-P2-SHELL-01` | `apps/desktop-shell` | HTML5/TS | Windows 11 / x86-64 | `umr-desktop-shell` 0.1.0 | `LocalNative` | **Verified** | App Library, Dropzone, Phone Canvas Viewport & Diagnostics Drawer (2026-10-15) |
+| `TEST-P3-HOST-01` | `host-platform-detector` | System | Windows / Linux / macOS (x86-64 / ARM64) | `umr-backend-android` 0.2.0 | `LocalVirtualized` / `LocalNative` | **Verified** | Multi-host OS, CPU, and hypervisor detection with capability mapping (2026-10-15) |
+| `TEST-P3-VIRT-01` | `hypervisor-partition-adapters` | Config | Windows (WHPX), Linux (Cgroups/Binderfs), macOS (VZ) | `umr-backend-android` 0.2.0 | `LocalVirtualized` / `LocalNative` | **Verified** | MicroVM & container partition configurations with VirtIO device trees (2026-10-15) |
+| `TEST-P3-TRN-01` | `guest-transport-bridge` | Sockets | Windows 11 / x86-64 | `umr-backend-android` 0.2.0 | `LocalVirtualized` | **Verified** | VirtIO-vsock, ADB protocol, and mock guest transports verified (2026-10-15) |
+| `TEST-P3-PKG-01` | `org.umr.sample.app` | APK | Windows 11 / x86-64 | `umr-backend-android` 0.2.0 | `LocalVirtualized` | **Verified** | Persistent catalog, state-preserving upgrade, downgrade rejection & clean uninstall (2026-10-15) |
+| `TEST-P3-RES-01` | `watchdog-crash-containment` | Watchdog | Windows 11 / x86-64 | `umr-backend-android` 0.2.0 | `LocalVirtualized` | **Verified** | ANR monitoring, signal 11/6 stack trace extraction, session crash isolation (2026-10-15) |
+| `TEST-P3-IPC-01` | `umr-ipc-phase3-extensions` | JSON-RPC | Windows 11 / x86-64 | `umr-ipc` 0.1.0 | `LocalNative` | **Verified** | `umr.host.capabilities`, `umr.packages.list`, `umr.packages.uninstall` endpoints (2026-10-15) |
+| `TEST-P4-GAP-01` | `framework-gap-tracker` | Audit | All Desktop Hosts | `umr-backend-ios` 0.2.0 | N/A | **Verified** | Automated gap analysis: UIKit, Metal, StoreKit, CloudKit & FairPlay DRM (2026-10-15) |
+| `TEST-P4-SIM-01` | `com.dev.simulatorapp` | IPA | macOS 14+ / ARM64 & x86-64 | `umr-backend-ios` 0.2.0 | `LocalNative` | **Verified** | Track A: Apple Simulator runtime lifecycle, 1170x2532 Retina frames, non-sim rejection (2026-10-15) |
+| `TEST-P4-HLE-01` | `com.retro.game` | IPA | Windows / Linux / macOS | `umr-backend-ios` 0.2.0 | `LocalHle` | **Verified** | Track B: 32-bit ARMv7 HLE lifecycle, 320x480 frames, strict ARM64 rejection (2026-10-15) |
+| `TEST-P4-REM-01` | `com.modern.metalapp` | IPA | Windows / Linux / macOS | `umr-backend-ios` 0.2.0 | `RemoteStream` | **Verified** | Track C: Tethered device bridge, mandatory `RemoteStream` labeling & watermarked frames (2026-10-15) |
+| `TEST-P4-NEG-01` | `tiered-ios-negotiation` | Policy | All Desktop Hosts | `umr-core` 0.1.0 | Multiple | **Verified** | Capability routing: Track A (macOS sim), Track B (32-bit), Track C (modern), DRM rejection (2026-10-15) |
+| `TEST-P4-IPC-01` | `umr-ipc-phase4-extensions` | JSON-RPC | Windows 11 / x86-64 | `umr-ipc` 0.1.0 | `LocalNative` | **Verified** | `umr.ios.gap_report` endpoint and tiered iOS backend registrations (2026-10-15) |
+| `TEST-P5-CAT-01` | `curated-catalog-manifest` | Manifest | All Desktop Hosts | `umr-distribution` 0.1.0 | `LocalNative` | **Verified** | Curated catalog manifest query, publisher registry, and multi-criteria filter search (2026-10-15) |
+| `TEST-P5-SIG-01` | `package-provenance-verifier` | Crypto | All Desktop Hosts | `umr-distribution` 0.1.0 | `LocalNative` | **Verified** | Cryptographic SHA-256 digest calculation & publisher signature validation (2026-10-15) |
+| `TEST-P5-DOWN-01` | `anti-downgrade-guard` | Security | All Desktop Hosts | `umr-distribution` 0.1.0 | `LocalNative` | **Verified** | Monotonic versioning enforcement rejecting rollback/downgrade attacks (2026-10-15) |
+| `TEST-P5-LIC-01` | `licensing-and-compliance` | Legal/Policy | All Desktop Hosts | `umr-distribution` 0.1.0 | `LocalNative` | **Verified** | User EULA acceptance ledger, FairPlay DRM rejection & open-source attribution notices (2026-10-15) |
+| `TEST-P5-PRIV-01` | `remote-privacy-gate` | Privacy | All Desktop Hosts | `umr-distribution` 0.1.0 | `RemoteStream` | **Verified** | Mandatory user consent gating for Track C and UI watermark labeling enforcement (2026-10-15) |
+| `TEST-P5-SAN-01` | `support-report-scrubber` | Diagnostics | All Desktop Hosts | `umr-distribution` 0.1.0 | `LocalNative` | **Verified** | Automated redaction of secrets, tokens, passwords, private keys, emails, and home paths (2026-10-15) |
+| `TEST-P5-IPC-01` | `umr-ipc-phase5-extensions` | JSON-RPC | Windows 11 / x86-64 | `umr-ipc` 0.1.0 | `LocalNative` | **Verified** | `umr.catalog.*`, `umr.provenance.*`, `umr.privacy.*`, `umr.license.*`, `umr.support.*` (2026-10-15) |
+
 
 ## Required cohorts
 

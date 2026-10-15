@@ -120,6 +120,20 @@ pub struct SessionIdParams {
     pub session_id: String,
 }
 
+/// Parameters for `umr.packages.uninstall`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackageNameParams {
+    pub package_name: String,
+}
+
+/// Parameters for `umr.packages.upgrade`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpgradePackageParams {
+    pub package_path: String,
+    #[serde(default)]
+    pub force: bool,
+}
+
 /// Interactive input payload sent from Desktop Shell to an active session.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -190,5 +204,52 @@ pub struct FrameDataResponse {
     pub timestamp_ms: u64,
     pub frame_index: u64,
     pub base64_rgba: String,
+}
+
+/// Parameters for `umr.catalog.get`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CatalogGetParams {
+    pub app_id: String,
+}
+
+/// Parameters for `umr.provenance.verify`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VerifyProvenanceParams {
+    pub package_path: String,
+    pub publisher_id: String,
+    pub signature: String,
+    pub version_code: u64,
+}
+
+/// Parameters for `umr.privacy.get_consent`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GetConsentParams {
+    pub host_endpoint: String,
+}
+
+/// Parameters for `umr.privacy.record_consent`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecordConsentParams {
+    pub user_id: String,
+    pub host_endpoint: String,
+    pub allow_input_streaming: bool,
+    pub allow_frame_streaming: bool,
+}
+
+/// Parameters for `umr.license.accept`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LicenseAcceptParams {
+    pub app_id: String,
+    pub version: String,
+    pub license_type: String,
+    pub terms_text: String,
+}
+
+/// Parameters for `umr.support.generate_report`.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GenerateSupportReportParams {
+    pub host_os: Option<String>,
+    pub host_cpu: Option<String>,
+    pub logs: Option<Vec<String>>,
 }
 

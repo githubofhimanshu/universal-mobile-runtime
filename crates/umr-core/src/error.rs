@@ -27,6 +27,9 @@ pub enum ErrorCode {
     ErrBackendIncompatibleApiLevel,
     ErrBackendRemoteDeviceRequired,
     ErrBackendProcessCrashed,
+    ErrBackendTimeout,
+    ErrBackendSandboxFailure,
+    ErrBackendSessionFailed,
     ErrBackendInternal,
 }
 
