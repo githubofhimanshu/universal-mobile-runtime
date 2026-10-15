@@ -140,6 +140,17 @@ body {
   height: 100%;
   min-height: 0;
   overflow: hidden;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.panel-right.panel-wide {
+  width: 780px;
+  max-width: 55vw;
+}
+
+.panel-right.panel-collapsed {
+  width: 0 !important;
+  display: none !important;
 }
 
 /* Dropzone Styling */
@@ -481,10 +492,12 @@ body {
   min-height: 0;
   overflow: hidden;
   position: relative;
+  background-color: var(--bg-surface);
 }
 
 .diag-header {
-  padding: 12px 14px;
+  padding: 10px 12px;
+  background-color: #0f121a;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
@@ -492,46 +505,218 @@ body {
   flex-shrink: 0;
 }
 
+.diag-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .diag-title-group {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 
 .diag-title-group h3 {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.2px;
+  margin: 0;
 }
 
-.diag-controls {
+/* Pulsing live stream indicator */
+.diag-pulse-live {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: diag-pulse 2s infinite;
+}
+
+@keyframes diag-pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* Telemetry stat pills */
+.diag-telemetry-pills {
   display: flex;
-  gap: 6px;
   align-items: center;
+  gap: 6px;
 }
 
-.select-filter-sm, .input-search-sm {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  color: var(--text-main);
-  padding: 4px 8px;
-  border-radius: 4px;
+.telemetry-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+  line-height: 1.3;
+  user-select: none;
+}
+
+.pill-total {
+  background-color: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.pill-warn {
+  background-color: rgba(251, 191, 36, 0.18);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  cursor: pointer;
+}
+.pill-warn:hover {
+  background-color: rgba(251, 191, 36, 0.3);
+}
+
+.pill-error {
+  background-color: rgba(248, 113, 113, 0.22);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  cursor: pointer;
+}
+.pill-error:hover {
+  background-color: rgba(248, 113, 113, 0.35);
+}
+
+.pill-sanitized {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.diag-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.diag-action-btn {
+  padding: 3px 8px;
   font-size: 11px;
 }
 
-.input-search-sm {
+/* Secondary controls bar */
+.diag-controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.diag-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
   flex: 1;
 }
 
+.diag-search-icon {
+  position: absolute;
+  left: 8px;
+  font-size: 11px;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.diag-controls-bar .input-search-sm {
+  width: 100%;
+  padding-left: 26px;
+  padding-right: 70px;
+}
+
+.diag-search-count {
+  position: absolute;
+  right: 24px;
+  font-size: 10px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.diag-search-clear {
+  position: absolute;
+  right: 6px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 4px;
+}
+.diag-search-clear:hover {
+  color: #fff;
+}
+
+/* Category Quick Filter Chips */
+.diag-category-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow-x: auto;
+  padding-top: 1px;
+}
+
+.diag-cat-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  margin-right: 2px;
+  flex-shrink: 0;
+}
+
+.diag-chip {
+  background-color: #171b26;
+  border: 1px solid #30363d;
+  color: #94a3b8;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.diag-chip:hover {
+  border-color: #58a6ff;
+  color: #e2e8f0;
+}
+
+.diag-chip.active {
+  background-color: rgba(56, 189, 248, 0.18);
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+.diag-chip.chip-toggle.active {
+  background-color: rgba(248, 113, 113, 0.15);
+  border-color: #f87171;
+  color: #f87171;
+}
+
+.diag-chip.chip-toggle:not(.active) {
+  opacity: 0.6;
+}
+
+/* Diagnostics Log Area */
 .diag-log-container {
   flex: 1 1 0%;
   min-height: 0;
   overflow-y: scroll;
   overflow-x: hidden;
-  padding: 10px 12px;
-  background-color: #0b0d13;
+  padding: 8px 10px;
+  background-color: #07090e;
   font-family: var(--font-mono);
   font-size: 11px;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 /* Custom Visible Scrollbar */
@@ -539,17 +724,17 @@ body {
   width: 8px;
 }
 .diag-log-container::-webkit-scrollbar-track {
-  background: #0b0d13;
+  background: #07090e;
 }
 .diag-log-container::-webkit-scrollbar-thumb {
-  background: #30363d;
+  background: #252d3d;
   border-radius: 4px;
 }
 .diag-log-container::-webkit-scrollbar-thumb:hover {
-  background: #58a6ff;
+  background: #388bfd;
 }
 
-/* Float button to resume auto-scroll when user scrolled up */
+/* Float button to resume auto-scroll */
 .diag-resume-autoscroll {
   position: absolute;
   bottom: 16px;
@@ -574,49 +759,164 @@ body {
 }
 
 .diag-empty-placeholder {
-  color: var(--text-muted);
+  color: #94a3b8;
   text-align: center;
-  padding: 40px 10px;
+  padding: 50px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
+.diag-empty-icon {
+  font-size: 32px;
+  margin-bottom: 4px;
+}
+
+.diag-empty-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.diag-empty-desc {
+  font-size: 11px;
+  color: #64748b;
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+/* Log Rows */
 .diag-log-row {
   display: flex;
-  gap: 8px;
-  margin-bottom: 2px;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 2.5px 6px;
+  border-radius: 4px;
+  position: relative;
+  transition: background-color 0.1s ease;
   word-break: break-all;
 }
 
+.diag-log-row:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.diag-level-error-row {
+  background-color: rgba(248, 81, 73, 0.08);
+  border-left: 2px solid #f85149;
+}
+
+.diag-level-warn-row {
+  background-color: rgba(210, 153, 34, 0.06);
+  border-left: 2px solid #d29922;
+}
+
 .log-time {
-  color: #6e7681;
+  color: #64748b;
+  font-size: 10px;
+  width: 52px;
   flex-shrink: 0;
+  user-select: none;
+  padding-top: 1px;
 }
 
-.log-level {
+.log-prio {
+  font-size: 9.5px;
   font-weight: 700;
+  width: 32px;
+  text-align: center;
   flex-shrink: 0;
+  border-radius: 3px;
+  padding: 1px 2px;
+  line-height: 1.2;
 }
 
-.log-level-debug { color: #58a6ff; }
-.log-level-info { color: #3fb950; }
-.log-level-warn { color: #d29922; }
-.log-level-error { color: #f85149; }
+.diag-level-verbose { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+.diag-level-debug { background: rgba(56, 189, 248, 0.18); color: #38bdf8; }
+.diag-level-info { background: rgba(52, 211, 153, 0.18); color: #34d399; }
+.diag-level-warn { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+.diag-level-error, .diag-level-fatal { background: rgba(248, 113, 113, 0.25); color: #f87171; }
 
-.log-comp {
-  color: #d2a8ff;
+/* Tag Chips */
+.diag-tag-chip {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
   flex-shrink: 0;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.3;
 }
 
-.log-msg {
-  color: #c9d1d9;
+.tag-purple { background: rgba(192, 132, 252, 0.15); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.3); }
+.tag-emerald { background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }
+.tag-sky { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+.tag-amber { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+.tag-pink { background: rgba(244, 114, 182, 0.15); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.3); }
+.tag-rose { background: rgba(251, 113, 133, 0.15); color: #fb7185; border: 1px solid rgba(251, 113, 133, 0.3); }
+.tag-teal { background: rgba(45, 212, 191, 0.15); color: #2dd4bf; border: 1px solid rgba(45, 212, 191, 0.3); }
+
+.diag-msg-body {
+  flex: 1 1 0%;
+  min-width: 0;
+  color: #e2e8f0;
+  word-break: break-all;
+}
+
+/* Row 1-Click Copy Button */
+.diag-row-copy-btn {
+  opacity: 0;
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid #475569;
+  border-radius: 4px;
+  color: #94a3b8;
+  font-size: 10px;
+  cursor: pointer;
+  padding: 1px 4px;
+  line-height: 1;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.diag-log-row:hover .diag-row-copy-btn {
+  opacity: 1;
+}
+
+.diag-row-copy-btn:hover {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #60a5fa;
+}
+
+.diag-row-copy-btn.copied {
+  background: #10b981 !important;
+  color: #fff !important;
+  border-color: #34d399 !important;
+  opacity: 1 !important;
+}
+
+/* Highlight & Redaction Badges */
+mark.diag-highlight {
+  background-color: #facc15;
+  color: #0f172a;
+  font-weight: 700;
+  border-radius: 2px;
+  padding: 0 2px;
 }
 
 .badge-redacted {
-  background-color: #3b2300;
-  color: #f1e05a;
-  border: 1px solid #7d4e00;
+  background-color: #451a03;
+  color: #fde047;
+  border: 1px solid #78350f;
   padding: 0 4px;
   border-radius: 3px;
   font-weight: 700;
+  font-size: 10px;
 }
 
 /* Badges & Buttons */
