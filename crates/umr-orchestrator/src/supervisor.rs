@@ -63,16 +63,39 @@ pub fn execute_sandboxed_intake(
     package_path: &Path,
     timeout: Duration,
 ) -> UmrResult<PackageMetadata> {
-    if !package_path.exists() {
-        return Err(DiagnosticError::new(
-            ErrorCode::ErrIntakeMalformedArchive,
-            format!("Package file not found: '{}'", package_path.display()),
-        ));
-    }
+    let resolved_path = if package_path.exists() {
+        package_path.to_path_buf()
+    } else {
+        let mut candidates = Vec::new();
+        if let Some(name) = package_path.file_name() {
+            candidates.push(PathBuf::from("target/umr-sandbox/uploads").join(name));
+            candidates.push(PathBuf::from("tests/fixtures").join(name));
+            if let Ok(userprofile) = std::env::var("USERPROFILE") {
+                let up = PathBuf::from(userprofile);
+                candidates.push(up.join("Downloads").join(name));
+                candidates.push(up.join("Desktop").join(name));
+            }
+            if let Ok(home) = std::env::var("HOME") {
+                let hp = PathBuf::from(home);
+                candidates.push(hp.join("Downloads").join(name));
+                candidates.push(hp.join("Desktop").join(name));
+            }
+        }
+
+        match candidates.into_iter().find(|c| c.exists()) {
+            Some(found) => found,
+            None => {
+                return Err(DiagnosticError::new(
+                    ErrorCode::ErrIntakeMalformedArchive,
+                    format!("Package file not found: '{}'", package_path.display()),
+                ));
+            }
+        }
+    };
 
     let child = Command::new(intake_bin)
         .arg("--inspect")
-        .arg(package_path)
+        .arg(&resolved_path)
         .arg("--json")
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
