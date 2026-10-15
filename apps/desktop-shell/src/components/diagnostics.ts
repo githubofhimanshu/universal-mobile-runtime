@@ -384,16 +384,34 @@ export class DiagnosticsComponent {
       resumeBtn.style.display = 'none';
     });
 
-    // Detect user manual scroll up/down
+    // Wheel event: explicitly track user wheel up vs down
+    list?.addEventListener('wheel', (e: WheelEvent) => {
+      if (e.deltaY < 0) {
+        // User scrolled UP: pause auto-scroll immediately so incoming logs don't snap back
+        this.autoScroll = false;
+        this.updateAutoScrollBtn();
+        if (resumeBtn) resumeBtn.style.display = 'flex';
+      } else if (e.deltaY > 0) {
+        // User scrolling DOWN: re-enable auto-scroll when reaching the bottom
+        const distanceToBottom = list.scrollHeight - list.scrollTop - list.clientHeight;
+        if (distanceToBottom <= 10) {
+          this.autoScroll = true;
+          this.updateAutoScrollBtn();
+          if (resumeBtn) resumeBtn.style.display = 'none';
+        }
+      }
+    }, { passive: true });
+
+    // Scroll event: handles scrollbar drag, trackpad, and keyboard navigation
     list?.addEventListener('scroll', () => {
-      const isAtBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
-      if (!isAtBottom) {
+      const distanceToBottom = list.scrollHeight - list.scrollTop - list.clientHeight;
+      if (distanceToBottom > 15) {
         if (this.autoScroll) {
           this.autoScroll = false;
           this.updateAutoScrollBtn();
         }
         if (resumeBtn) resumeBtn.style.display = 'flex';
-      } else {
+      } else if (distanceToBottom <= 8) {
         if (!this.autoScroll) {
           this.autoScroll = true;
           this.updateAutoScrollBtn();
