@@ -12,28 +12,25 @@ Update this file only from reproducible tests or clearly labelled manual results
 - **Unsupported:** Known not to work for the declared case.
 - **Blocked:** Depends on unavailable permissions, services, hardware, or external requirements.
 
-## Initial matrix
+## Platform Matrix (Post-Phase 0 Baseline)
 
-| Host OS | Host CPU | Android strategy | Android status | iOS strategy | iOS status |
+| Host OS | Host CPU | Android Strategy | Android Status | iOS Strategy | iOS Status |
 |---|---|---|---|---|---|
-| Windows | To be decided | Research per-host guest/emulator option | Not evaluated | Local-vs-remote feasibility required | Not evaluated |
-| macOS | Intel and/or Apple Silicon to be decided | Research per-host guest/emulator option | Not evaluated | Apple-supported dev workflow and other valid options evaluated separately | Not evaluated |
-| Linux | x86-64 and/or ARM64 to be decided | Research container/VM option | Not evaluated | Local-vs-remote feasibility required | Not evaluated |
+| **Windows 11 / 10** | x86-64 | WHPX MicroVM (VirtIO-GPU, VirtIO-vsock) | **Research** (Phase 0 Spikes Complete) | Track B: HLE (Legacy 32-bit); Track C: Tethered Device / Remote Stream | **Research** (Dual-track defined; Local modern unsupported) |
+| **Windows 11** | ARM64 | WHPX MicroVM (Native ARM64 AOSP) | **Research** (Native guest execution path defined) | Track B: HLE (Legacy 32-bit); Track C: Tethered Device / Remote Stream | **Research** (Dual-track defined; Local modern unsupported) |
+| **macOS 14+** | Apple Silicon (ARM64) | Virtualization.framework MicroVM (Native ARM64 AOSP) | **Research** (Native guest execution path defined) | Track A: Apple Simulator Runtime (Local); Track B: HLE (Legacy 32-bit) | **Research** (Track A/B defined; Simulator path viable) |
+| **macOS 14+** | Intel (x86-64) | Virtualization.framework MicroVM (x86-64 AOSP) | **Research** (MicroVM path defined) | Track A: Apple Simulator Runtime (Local); Track B: HLE (Legacy 32-bit) | **Research** (Track A/B defined; Simulator path viable) |
+| **Linux (Ubuntu 22.04+)**| x86-64 | Container (namespaces, cgroups v2, Binderfs) | **Research** (Container path defined; near-native) | Track B: HLE (Legacy 32-bit); Track C: Tethered Device / Remote Stream | **Research** (Dual-track defined; Local modern unsupported) |
+| **Linux (Ubuntu 24.04+)**| ARM64 | Container (namespaces, cgroups v2, Binderfs) | **Research** (Container path defined; full native) | Track B: HLE (Legacy 32-bit); Track C: Tethered Device / Remote Stream | **Research** (Dual-track defined; Local modern unsupported) |
 
 ## Per-app test record
 
-For each app/test fixture, record:
-
-- Test ID and permission/provenance notes (never commit the app unless redistribution is allowed).
-- App name and package/bundle identifier where safe to record.
-- Package hash and app version/build.
-- Host OS/version and host CPU architecture.
-- Backend name/version/configuration.
-- App/guest architecture and OS/framework level when known.
-- Execution mode: local native, virtualized, translated, emulated, or remote.
-- Test steps and expected outcomes.
-- Result, logs, limitations, and date.
-- Whether the result can be shared publicly.
+| Test ID | App Name / Package ID | Format | Host OS / CPU | Backend / Version | Execution Mode | Result | Notes / Date |
+|---|---|---|---|---|---|---|---|
+| `TEST-P1-AND-01` | `org.umr.synthetic.hello` | APK | Windows 11 / x86-64 | `android-reference-backend` 0.1.0 | `LocalNative` | **Verified** | Full lifecycle pass (Prepare -> Run -> Heartbeat -> Stop -> Logs) (2026-10-15) |
+| `TEST-P1-AND-NEG` | `malformed-slip.apk` | APK | Windows 11 / x86-64 | `umr-intake-worker` 0.1.0 | N/A | **Verified** | Rejection verified: `ERR_INTAKE_ZIP_TRAVERSAL` (2026-10-15) |
+| `TEST-P1-IOS-DRM` | `com.umr.encrypted.mock` | IPA | Windows 11 / x86-64 | `umr-orchestrator` 0.1.0 | N/A | **Verified** | Detected FairPlay cryptid=1; rejected with `ERR_INTAKE_DRM_PROTECTED` (2026-10-15) |
+| `TEST-P1-IOS-REM` | `com.umr.sim.mock` | IPA | Windows 11 / x86-64 | `umr-orchestrator` 0.1.0 | `RemoteStream` | **Verified** | Evaluated on non-macOS; classified as `RemoteRequired` / `RemoteStream` (2026-10-15) |
 
 ## Required cohorts
 
