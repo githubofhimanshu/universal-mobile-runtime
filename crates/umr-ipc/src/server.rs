@@ -139,6 +139,7 @@ Access-Control-Allow-Headers: Content-Type, Authorization\r\n\
             "HTTP/1.1 200 OK\r\n\
 Content-Type: application/json\r\n\
 Access-Control-Allow-Origin: *\r\n\
+Connection: close\r\n\
 Content-Length: {}\r\n\
 \r\n\
 {}",
@@ -152,42 +153,49 @@ Content-Length: {}\r\n\
     // Handle Static UI file serving for Desktop Shell
     if method == "GET" {
         let clean_path = path.split('?').next().unwrap_or(path);
-        let rel_path = if clean_path == "/" {
-            "index.html"
-        } else {
-            clean_path.trim_start_matches('/')
-        };
+        let rel_path = clean_path.trim_start_matches('/');
 
         // Guard against directory traversal
         if !rel_path.contains("..") {
             let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_default();
             let base_manifest = std::path::PathBuf::from(manifest_dir);
 
-            let candidates = [
-                std::path::PathBuf::from("apps/desktop-shell/dist").join(rel_path),
-                std::path::PathBuf::from("apps/desktop-shell").join(rel_path),
-                std::path::PathBuf::from("../../apps/desktop-shell/dist").join(rel_path),
-                std::path::PathBuf::from("../../apps/desktop-shell").join(rel_path),
-                base_manifest.join("../../apps/desktop-shell/dist").join(rel_path),
-                base_manifest.join("../../apps/desktop-shell").join(rel_path),
-            ];
+            let mut candidate_rel_paths = Vec::new();
+            if rel_path.is_empty() || rel_path == "index.html" {
+                candidate_rel_paths.push("dist/index.html");
+                candidate_rel_paths.push("index.html");
+            } else {
+                candidate_rel_paths.push(rel_path);
+            }
 
-            for candidate in &candidates {
-                if candidate.exists() && candidate.is_file() {
-                    if let Ok(bytes) = std::fs::read(candidate) {
-                        let content_type = mime_for_path(candidate);
-                        let response = format!(
-                            "HTTP/1.1 200 OK\r\n\
+            for p in &candidate_rel_paths {
+                let candidates = [
+                    std::path::PathBuf::from("apps/desktop-shell").join(p),
+                    std::path::PathBuf::from("apps/desktop-shell/dist").join(p),
+                    std::path::PathBuf::from("../../apps/desktop-shell").join(p),
+                    std::path::PathBuf::from("../../apps/desktop-shell/dist").join(p),
+                    base_manifest.join("../../apps/desktop-shell").join(p),
+                    base_manifest.join("../../apps/desktop-shell/dist").join(p),
+                ];
+
+                for candidate in &candidates {
+                    if candidate.exists() && candidate.is_file() {
+                        if let Ok(bytes) = std::fs::read(candidate) {
+                            let content_type = mime_for_path(candidate);
+                            let response = format!(
+                                "HTTP/1.1 200 OK\r\n\
 Content-Type: {}\r\n\
 Access-Control-Allow-Origin: *\r\n\
+Connection: close\r\n\
 Content-Length: {}\r\n\
 \r\n",
-                            content_type,
-                            bytes.len()
-                        );
-                        stream.write_all(response.as_bytes())?;
-                        stream.write_all(&bytes)?;
-                        return Ok(());
+                                content_type,
+                                bytes.len()
+                            );
+                            stream.write_all(response.as_bytes())?;
+                            stream.write_all(&bytes)?;
+                            return Ok(());
+                        }
                     }
                 }
             }
@@ -206,6 +214,7 @@ Content-Length: {}\r\n\
             "HTTP/1.1 200 OK\r\n\
 Content-Type: application/json\r\n\
 Access-Control-Allow-Origin: *\r\n\
+Connection: close\r\n\
 Content-Length: {}\r\n\
 \r\n\
 {}",
@@ -217,7 +226,7 @@ Content-Length: {}\r\n\
     }
 
     // Default 404
-    let not_found = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
+    let not_found = "HTTP/1.1 404 Not Found\r\nConnection: close\r\nContent-Length: 0\r\n\r\n";
     stream.write_all(not_found.as_bytes())?;
     Ok(())
 }
