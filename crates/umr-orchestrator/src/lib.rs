@@ -7,8 +7,8 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use umr_core::{
-    BackendCapabilities, DiagnosticError, ErrorCode, IAndroidBackend,
-    IIosBackend, LifecycleState, NegotiationResult, PackageMetadata, SessionId,
+    BackendCapabilities, DiagnosticError, ErrorCode, FrameBuffer, IAndroidBackend,
+    IIosBackend, InputEvent, LifecycleState, NegotiationResult, PackageMetadata, SessionId,
     UmrResult,
 };
 
@@ -196,6 +196,59 @@ impl RuntimeOrchestrator {
     pub fn get_report(&self, session_id: &SessionId) -> UmrResult<&DiagnosticReport> {
         let session = self.sessions.get(session_id)?;
         Ok(&session.report)
+    }
+
+    /// Dispatches an input event (pointer touch, keycode, navigation) to an active session.
+    pub fn send_input(&mut self, session_id: &SessionId, event: InputEvent) -> UmrResult<()> {
+        let session = self.sessions.get(session_id)?;
+        let backend_id = session.backend_id.clone();
+        let record = session.record.clone();
+
+        if let Some(backend) = self.registry.get_android_mut(&backend_id) {
+            backend.send_input(&record, event)
+        } else if let Some(backend) = self.registry.get_ios_mut(&backend_id) {
+            backend.send_input(&record, event)
+        } else {
+            Err(DiagnosticError::new(
+                ErrorCode::ErrBackendUnavailable,
+                format!("Backend '{}' not found", backend_id),
+            ))
+        }
+    }
+
+    /// Captures the latest generated frame buffer from an active session.
+    pub fn capture_frame(&self, session_id: &SessionId) -> UmrResult<Option<FrameBuffer>> {
+        let session = self.sessions.get(session_id)?;
+        let backend_id = &session.backend_id;
+
+        if let Some(backend) = self.registry.get_android(backend_id) {
+            backend.capture_frame(&session.record)
+        } else if let Some(backend) = self.registry.get_ios(backend_id) {
+            backend.capture_frame(&session.record)
+        } else {
+            Err(DiagnosticError::new(
+                ErrorCode::ErrBackendUnavailable,
+                format!("Backend '{}' not found", backend_id),
+            ))
+        }
+    }
+
+    /// Purges application data and caches for a session.
+    pub fn wipe_storage(&mut self, session_id: &SessionId) -> UmrResult<()> {
+        let session = self.sessions.get_mut(session_id)?;
+        let backend_id = session.backend_id.clone();
+        let record = session.record.clone();
+
+        session.log(LogLevel::Info, "orchestrator", "Storage wipe requested");
+
+        if let Some(backend) = self.registry.get_android_mut(&backend_id) {
+            backend.wipe_storage(&record)
+        } else {
+            Err(DiagnosticError::new(
+                ErrorCode::ErrBackendUnavailable,
+                format!("Backend '{}' not found or does not support storage wiping", backend_id),
+            ))
+        }
     }
 }
 

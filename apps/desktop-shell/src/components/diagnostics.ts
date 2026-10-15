@@ -1,0 +1,177 @@
+import { UMRClient } from '../rpc-client';
+import { DiagnosticEntry, DiagnosticReport } from '../types';
+
+export class DiagnosticsComponent {
+  private container: HTMLElement;
+  private client: UMRClient;
+  private logs: DiagnosticEntry[] = [];
+  private currentSessionId: string | null = null;
+  private filterLevel = 'all';
+  private searchQuery = '';
+  private autoScroll = true;
+  private isDrawerOpen = true;
+
+  constructor(container: HTMLElement, client: UMRClient) {
+    this.container = container;
+    this.client = client;
+    this.render();
+  }
+
+  toggleDrawer() {
+    this.isDrawerOpen = !this.isDrawerOpen;
+    const drawer = this.container.querySelector('.diagnostics-drawer') as HTMLElement;
+    if (drawer) {
+      drawer.classList.toggle('drawer-collapsed', !this.isDrawerOpen);
+    }
+  }
+
+  async updateLogsForSession(sessionId: string) {
+    this.currentSessionId = sessionId;
+    try {
+      const report = await this.client.getReport(sessionId);
+      if (report && report.entries) {
+        this.logs = report.entries;
+        this.renderLogs();
+      }
+    } catch (e) {
+      // Ignored if session has no new logs yet
+    }
+  }
+
+  private render() {
+    this.container.innerHTML = `
+      <div class="diagnostics-drawer">
+        <div class="diag-header">
+          <div class="diag-title-group">
+            <h3>Live Diagnostics Stream</h3>
+            <span class="badge badge-success">🔒 Secrets Sanitized</span>
+          </div>
+
+          <div class="diag-controls">
+            <select class="select-filter-sm" id="diag-level-filter">
+              <option value="all">All Levels</option>
+              <option value="debug">Debug / Verbose</option>
+              <option value="info">Info</option>
+              <option value="warn">Warnings</option>
+              <option value="error">Errors</option>
+            </select>
+            <input 
+              type="text" 
+              class="input-search-sm" 
+              id="diag-search" 
+              placeholder="Search logs..." 
+            />
+            <button class="btn btn-sm btn-outline" id="diag-export-btn" title="Export Diagnostic Report as JSON">
+              ⬇ Export JSON
+            </button>
+            <button class="btn btn-sm btn-subtle" id="diag-clear-btn" title="Clear view">
+              ✕ Clear
+            </button>
+          </div>
+        </div>
+
+        <div class="diag-log-container" id="diag-log-list">
+          <div class="diag-empty-placeholder">
+            Waiting for session logs or system activity...
+          </div>
+        </div>
+      </div>
+    `;
+
+    this.attachEventListeners();
+  }
+
+  private attachEventListeners() {
+    const levelSelect = this.container.querySelector('#diag-level-filter') as HTMLSelectElement;
+    const searchInput = this.container.querySelector('#diag-search') as HTMLInputElement;
+    const clearBtn = this.container.querySelector('#diag-clear-btn') as HTMLElement;
+    const exportBtn = this.container.querySelector('#diag-export-btn') as HTMLElement;
+
+    levelSelect.addEventListener('change', () => {
+      this.filterLevel = levelSelect.value;
+      this.renderLogs();
+    });
+
+    searchInput.addEventListener('input', () => {
+      this.searchQuery = searchInput.value.toLowerCase().trim();
+      this.renderLogs();
+    });
+
+    clearBtn.addEventListener('click', () => {
+      this.logs = [];
+      this.renderLogs();
+    });
+
+    exportBtn.addEventListener('click', () => {
+      this.exportReport();
+    });
+  }
+
+  private renderLogs() {
+    const list = this.container.querySelector('#diag-log-list') as HTMLElement;
+    if (!list) return;
+
+    const filtered = this.logs.filter((entry) => {
+      const matchLevel =
+        this.filterLevel === 'all' || entry.level.toLowerCase() === this.filterLevel;
+      const matchQuery =
+        !this.searchQuery ||
+        entry.component.toLowerCase().includes(this.searchQuery) ||
+        entry.message.toLowerCase().includes(this.searchQuery);
+      return matchLevel && matchQuery;
+    });
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="diag-empty-placeholder">No log events match filter</div>`;
+      return;
+    }
+
+    list.innerHTML = filtered
+      .map((entry) => {
+        const time = new Date(entry.timestamp).toLocaleTimeString();
+        const levelClass = `log-level-${entry.level.toLowerCase()}`;
+        const sanitizedMsg = this.highlightRedactions(entry.message);
+
+        return `
+          <div class="diag-log-row">
+            <span class="log-time">${time}</span>
+            <span class="log-level ${levelClass}">[${entry.level.toUpperCase()}]</span>
+            <span class="log-comp">${entry.component}:</span>
+            <span class="log-msg">${sanitizedMsg}</span>
+          </div>
+        `;
+      })
+      .join('');
+
+    if (this.autoScroll) {
+      list.scrollTop = list.scrollHeight;
+    }
+  }
+
+  private highlightRedactions(msg: string): string {
+    return msg.replace(
+      /\[REDACTED\]/g,
+      '<span class="badge-redacted" title="Sanitizer sanitized sensitive value">[REDACTED]</span>'
+    );
+  }
+
+  private exportReport() {
+    const report: DiagnosticReport = {
+      session_id: this.currentSessionId || 'offline',
+      package_id: 'umr-session-diagnostic',
+      created_at: new Date().toISOString(),
+      entries: this.logs,
+    };
+
+    const blob = new Blob([JSON.stringify(report, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `umr-diagnostic-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+}
+

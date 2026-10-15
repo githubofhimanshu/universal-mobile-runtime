@@ -1,5 +1,7 @@
 pub mod backend;
 pub mod error;
+pub mod framebuffer;
+pub mod input;
 pub mod lifecycle;
 pub mod metadata;
 
@@ -8,6 +10,11 @@ pub use backend::{
     NegotiationResult,
 };
 pub use error::{DiagnosticError, ErrorCode, UmrResult};
+pub use framebuffer::{encode_base64, FrameBuffer, FrameStats, PixelFormat};
+pub use input::{
+    InputEvent, KeyAction, NavigationButton, PointerAction, KEYCODE_APP_SWITCH, KEYCODE_BACK,
+    KEYCODE_HOME, KEYCODE_POWER, KEYCODE_UNKNOWN, KEYCODE_VOLUME_DOWN, KEYCODE_VOLUME_UP,
+};
 pub use lifecycle::{LifecycleState, SessionId, SessionRecord};
 pub use metadata::{
     AndroidPackageInfo, CpuArchitecture, EncryptionStatus, IosPackageInfo, PackageDetails,

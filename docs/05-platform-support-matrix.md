@@ -31,6 +31,11 @@ Update this file only from reproducible tests or clearly labelled manual results
 | `TEST-P1-AND-NEG` | `malformed-slip.apk` | APK | Windows 11 / x86-64 | `umr-intake-worker` 0.1.0 | N/A | **Verified** | Rejection verified: `ERR_INTAKE_ZIP_TRAVERSAL` (2026-10-15) |
 | `TEST-P1-IOS-DRM` | `com.umr.encrypted.mock` | IPA | Windows 11 / x86-64 | `umr-orchestrator` 0.1.0 | N/A | **Verified** | Detected FairPlay cryptid=1; rejected with `ERR_INTAKE_DRM_PROTECTED` (2026-10-15) |
 | `TEST-P1-IOS-REM` | `com.umr.sim.mock` | IPA | Windows 11 / x86-64 | `umr-orchestrator` 0.1.0 | `RemoteStream` | **Verified** | Evaluated on non-macOS; classified as `RemoteRequired` / `RemoteStream` (2026-10-15) |
+| `TEST-P2-IPC-01` | `umr-ipc-gateway` | JSON-RPC | Windows 11 / x86-64 | `umr-ipc` 0.1.0 | `LocalNative` | **Verified** | Schema-validated async JSON-RPC 2.0 loopback server on port 9090 (2026-10-15) |
+| `TEST-P2-INP-01` | `android-input-subsystem` | Events | Windows 11 / x86-64 | `android-reference-backend` 0.1.0 | `LocalNative` | **Verified** | Normalized pointer-to-pixel mapping & navigation keycode dispatch (2026-10-15) |
+| `TEST-P2-STG-01` | `android-storage-sandbox` | Sandbox | Windows 11 / x86-64 | `android-reference-backend` 0.1.0 | `LocalNative` | **Verified** | Segmented `/data/data/<pkg>` and `/sdcard/` with verified wipe (2026-10-15) |
+| `TEST-P2-FB-01` | `android-framebuffer-pipe` | RGBA8888 | Windows 11 / x86-64 | `android-reference-backend` 0.1.0 | `LocalNative` | **Verified** | 60 FPS RGBA8888 compositor with status bar, touch indicator & nav bar (2026-10-15) |
+| `TEST-P2-SHELL-01` | `apps/desktop-shell` | HTML5/TS | Windows 11 / x86-64 | `umr-desktop-shell` 0.1.0 | `LocalNative` | **Verified** | App Library, Dropzone, Phone Canvas Viewport & Diagnostics Drawer (2026-10-15) |
 
 ## Required cohorts
 

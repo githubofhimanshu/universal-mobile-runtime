@@ -1,0 +1,16 @@
+{
+  "name": "umr-desktop-shell",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Desktop Application Shell for Universal Mobile Runtime",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vite": "^5.2.11"
+  }
+}
