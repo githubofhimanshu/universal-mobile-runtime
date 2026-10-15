@@ -120,6 +120,20 @@ pub struct SessionIdParams {
     pub session_id: String,
 }
 
+/// Parameters for `umr.packages.uninstall`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackageNameParams {
+    pub package_name: String,
+}
+
+/// Parameters for `umr.packages.upgrade`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpgradePackageParams {
+    pub package_path: String,
+    #[serde(default)]
+    pub force: bool,
+}
+
 /// Interactive input payload sent from Desktop Shell to an active session.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]

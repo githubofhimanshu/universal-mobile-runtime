@@ -9,6 +9,7 @@ license.workspace = true
 umr-core = { path = "../umr-core" }
 umr-orchestrator = { path = "../umr-orchestrator" }
 umr-backend-reference = { path = "../umr-backend-reference" }
+umr-backend-android = { path = "../umr-backend-android" }
 serde.workspace = true
 serde_json.workspace = true
 chrono.workspace = true

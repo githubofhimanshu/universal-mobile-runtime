@@ -3,7 +3,9 @@ use std::process::exit;
 use std::sync::{Arc, Mutex};
 
 use clap::Parser;
+use umr_core::IAndroidBackend;
 
+use umr_backend_android::AndroidVirtualizationBackend;
 use umr_backend_reference::ReferenceAndroidBackend;
 use umr_ipc::{run_stdio_server, HttpServer, RpcHandler};
 use umr_orchestrator::{find_intake_binary, RuntimeOrchestrator};
@@ -42,10 +44,21 @@ fn main() {
 
     let mut orch = RuntimeOrchestrator::new(intake_bin);
     // Register reference Android backend
-    let backend = ReferenceAndroidBackend::new(&cli.sandbox);
-    orch.register_android(Box::new(backend));
+    let ref_backend = ReferenceAndroidBackend::new(&cli.sandbox);
+    orch.register_android(Box::new(ref_backend));
 
-    let handler = Arc::new(RpcHandler::new(Arc::new(Mutex::new(orch))));
+    // Register production Android virtualization backend
+    match AndroidVirtualizationBackend::new_auto(&cli.sandbox) {
+        Ok(virt_backend) => {
+            println!("[umr-ipc] Registered virtualization backend: {}", virt_backend.id());
+            orch.register_android(Box::new(virt_backend));
+        }
+        Err(err) => {
+            eprintln!("[umr-ipc] Warning: Virtualization backend unavailable: {}", err);
+        }
+    }
+
+    let handler = Arc::new(RpcHandler::with_sandbox(Arc::new(Mutex::new(orch)), cli.sandbox.clone()));
 
     if cli.stdio {
         eprintln!("[umr-ipc] Running in STDIO mode...");

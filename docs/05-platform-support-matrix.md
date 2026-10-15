@@ -36,6 +36,12 @@ Update this file only from reproducible tests or clearly labelled manual results
 | `TEST-P2-STG-01` | `android-storage-sandbox` | Sandbox | Windows 11 / x86-64 | `android-reference-backend` 0.1.0 | `LocalNative` | **Verified** | Segmented `/data/data/<pkg>` and `/sdcard/` with verified wipe (2026-10-15) |
 | `TEST-P2-FB-01` | `android-framebuffer-pipe` | RGBA8888 | Windows 11 / x86-64 | `android-reference-backend` 0.1.0 | `LocalNative` | **Verified** | 60 FPS RGBA8888 compositor with status bar, touch indicator & nav bar (2026-10-15) |
 | `TEST-P2-SHELL-01` | `apps/desktop-shell` | HTML5/TS | Windows 11 / x86-64 | `umr-desktop-shell` 0.1.0 | `LocalNative` | **Verified** | App Library, Dropzone, Phone Canvas Viewport & Diagnostics Drawer (2026-10-15) |
+| `TEST-P3-HOST-01` | `host-platform-detector` | System | Windows / Linux / macOS (x86-64 / ARM64) | `umr-backend-android` 0.2.0 | `LocalVirtualized` / `LocalNative` | **Verified** | Multi-host OS, CPU, and hypervisor detection with capability mapping (2026-10-15) |
+| `TEST-P3-VIRT-01` | `hypervisor-partition-adapters` | Config | Windows (WHPX), Linux (Cgroups/Binderfs), macOS (VZ) | `umr-backend-android` 0.2.0 | `LocalVirtualized` / `LocalNative` | **Verified** | MicroVM & container partition configurations with VirtIO device trees (2026-10-15) |
+| `TEST-P3-TRN-01` | `guest-transport-bridge` | Sockets | Windows 11 / x86-64 | `umr-backend-android` 0.2.0 | `LocalVirtualized` | **Verified** | VirtIO-vsock, ADB protocol, and mock guest transports verified (2026-10-15) |
+| `TEST-P3-PKG-01` | `org.umr.sample.app` | APK | Windows 11 / x86-64 | `umr-backend-android` 0.2.0 | `LocalVirtualized` | **Verified** | Persistent catalog, state-preserving upgrade, downgrade rejection & clean uninstall (2026-10-15) |
+| `TEST-P3-RES-01` | `watchdog-crash-containment` | Watchdog | Windows 11 / x86-64 | `umr-backend-android` 0.2.0 | `LocalVirtualized` | **Verified** | ANR monitoring, signal 11/6 stack trace extraction, session crash isolation (2026-10-15) |
+| `TEST-P3-IPC-01` | `umr-ipc-phase3-extensions` | JSON-RPC | Windows 11 / x86-64 | `umr-ipc` 0.1.0 | `LocalNative` | **Verified** | `umr.host.capabilities`, `umr.packages.list`, `umr.packages.uninstall` endpoints (2026-10-15) |
 
 ## Required cohorts
 

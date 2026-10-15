@@ -1,0 +1,19 @@
+[package]
+name = "umr-backend-android"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Universal Mobile Runtime Android Execution Backend with Cross-Host Virtualization & Adapters"
+
+[dependencies]
+umr-core = { path = "../umr-core" }
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+sha2.workspace = true
+
+[dev-dependencies]
+tempfile = "3.10"
+

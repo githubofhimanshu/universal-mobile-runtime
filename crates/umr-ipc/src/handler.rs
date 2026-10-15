@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use serde_json::{json, Value};
@@ -7,18 +7,26 @@ use umr_core::{NegotiationResult, SessionId};
 use umr_orchestrator::RuntimeOrchestrator;
 
 use crate::protocol::{
-    PackagePathParams, PrepareSessionParams, RpcError, RpcRequest,
-    RpcResponse, SendInputParams, SessionIdParams,
+    PackageNameParams, PackagePathParams, PrepareSessionParams, RpcError, RpcRequest,
+    RpcResponse, SendInputParams, SessionIdParams, UpgradePackageParams,
 };
 
 /// Thread-safe RPC Request Dispatcher interfacing with the Runtime Orchestrator.
 pub struct RpcHandler {
     orchestrator: Arc<Mutex<RuntimeOrchestrator>>,
+    sandbox_root: PathBuf,
 }
 
 impl RpcHandler {
     pub fn new(orchestrator: Arc<Mutex<RuntimeOrchestrator>>) -> Self {
-        Self { orchestrator }
+        Self::with_sandbox(orchestrator, PathBuf::from("target/umr-sandbox"))
+    }
+
+    pub fn with_sandbox(orchestrator: Arc<Mutex<RuntimeOrchestrator>>, sandbox_root: PathBuf) -> Self {
+        Self {
+            orchestrator,
+            sandbox_root,
+        }
     }
 
     /// Dispatches a raw JSON string and returns a formatted JSON-RPC response string.
@@ -292,6 +300,112 @@ impl RpcHandler {
                 let session_id = SessionId(params.session_id);
                 match orch.wipe_storage(&session_id) {
                     Ok(()) => RpcResponse::success(id, json!({ "status": "wiped" })),
+                    Err(err) => RpcResponse::error(
+                        id,
+                        RpcError::execution_error(err.message.clone(), Some(json!(err))),
+                    ),
+                }
+            }
+
+            "umr.host.capabilities" => {
+                let caps = umr_backend_android::HostPlatformDetector::detect_current();
+                RpcResponse::success(id, json!(caps))
+            }
+
+            "umr.packages.list" => {
+                match umr_backend_android::AndroidPackageManager::new(&self.sandbox_root) {
+                    Ok(mgr) => {
+                        let pkgs = mgr.list_packages();
+                        RpcResponse::success(id, json!(pkgs))
+                    }
+                    Err(err) => RpcResponse::error(
+                        id,
+                        RpcError::execution_error(err.message.clone(), Some(json!(err))),
+                    ),
+                }
+            }
+
+            "umr.packages.install" => {
+                let params: PackagePathParams = match parse_params(req.params) {
+                    Ok(p) => p,
+                    Err(e) => return RpcResponse::error(id, e),
+                };
+
+                let orch = self.orchestrator.lock().unwrap();
+                let meta = match orch.inspect_package(Path::new(&params.package_path)) {
+                    Ok(m) => m,
+                    Err(err) => {
+                        return RpcResponse::error(
+                            id,
+                            RpcError::execution_error(err.message.clone(), Some(json!(err))),
+                        );
+                    }
+                };
+
+                match umr_backend_android::AndroidPackageManager::new(&self.sandbox_root) {
+                    Ok(mut mgr) => match mgr.install_package(&meta) {
+                        Ok(record) => RpcResponse::success(id, json!(record)),
+                        Err(err) => RpcResponse::error(
+                            id,
+                            RpcError::execution_error(err.message.clone(), Some(json!(err))),
+                        ),
+                    },
+                    Err(err) => RpcResponse::error(
+                        id,
+                        RpcError::execution_error(err.message.clone(), Some(json!(err))),
+                    ),
+                }
+            }
+
+            "umr.packages.upgrade" => {
+                let params: UpgradePackageParams = match parse_params(req.params) {
+                    Ok(p) => p,
+                    Err(e) => return RpcResponse::error(id, e),
+                };
+
+                let orch = self.orchestrator.lock().unwrap();
+                let meta = match orch.inspect_package(Path::new(&params.package_path)) {
+                    Ok(m) => m,
+                    Err(err) => {
+                        return RpcResponse::error(
+                            id,
+                            RpcError::execution_error(err.message.clone(), Some(json!(err))),
+                        );
+                    }
+                };
+
+                match umr_backend_android::AndroidPackageManager::new(&self.sandbox_root) {
+                    Ok(mut mgr) => match mgr.upgrade_package(&meta, params.force) {
+                        Ok(record) => RpcResponse::success(id, json!(record)),
+                        Err(err) => RpcResponse::error(
+                            id,
+                            RpcError::execution_error(err.message.clone(), Some(json!(err))),
+                        ),
+                    },
+                    Err(err) => RpcResponse::error(
+                        id,
+                        RpcError::execution_error(err.message.clone(), Some(json!(err))),
+                    ),
+                }
+            }
+
+            "umr.packages.uninstall" => {
+                let params: PackageNameParams = match parse_params(req.params) {
+                    Ok(p) => p,
+                    Err(e) => return RpcResponse::error(id, e),
+                };
+
+                match umr_backend_android::AndroidPackageManager::new(&self.sandbox_root) {
+                    Ok(mut mgr) => match mgr.uninstall_package(&params.package_name) {
+                        Ok(()) => RpcResponse::success(
+                            id,
+                            json!({ "status": "uninstalled", "package": params.package_name }),
+                        ),
+                        Err(err) => RpcResponse::error(
+                            id,
+                            RpcError::execution_error(err.message.clone(), Some(json!(err))),
+                        ),
+                    },
                     Err(err) => RpcResponse::error(
                         id,
                         RpcError::execution_error(err.message.clone(), Some(json!(err))),
