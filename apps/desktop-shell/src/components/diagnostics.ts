@@ -29,7 +29,7 @@ export class DiagnosticsComponent {
     this.currentSessionId = sessionId;
     try {
       const report = await this.client.getReport(sessionId);
-      if (report && report.entries) {
+      if (report && report.entries && report.entries.length !== this.logs.length) {
         this.logs = report.entries;
         this.renderLogs();
       }
@@ -61,8 +61,11 @@ export class DiagnosticsComponent {
               id="diag-search" 
               placeholder="Search logs..." 
             />
+            <button class="btn btn-sm btn-outline" id="diag-autoscroll-toggle" title="Toggle automatic scrolling">
+              ⚡ Auto-Scroll: ON
+            </button>
             <button class="btn btn-sm btn-outline" id="diag-export-btn" title="Export Diagnostic Report as JSON">
-              ⬇ Export JSON
+              ⬇ Export
             </button>
             <button class="btn btn-sm btn-subtle" id="diag-clear-btn" title="Clear view">
               ✕ Clear
@@ -75,6 +78,10 @@ export class DiagnosticsComponent {
             Waiting for session logs or system activity...
           </div>
         </div>
+
+        <button class="diag-resume-autoscroll" id="diag-resume-autoscroll" style="display: none;">
+          ⬇ Jump to Bottom
+        </button>
       </div>
     `;
 
@@ -82,10 +89,13 @@ export class DiagnosticsComponent {
   }
 
   private attachEventListeners() {
+    const list = this.container.querySelector('#diag-log-list') as HTMLElement;
     const levelSelect = this.container.querySelector('#diag-level-filter') as HTMLSelectElement;
     const searchInput = this.container.querySelector('#diag-search') as HTMLInputElement;
     const clearBtn = this.container.querySelector('#diag-clear-btn') as HTMLElement;
     const exportBtn = this.container.querySelector('#diag-export-btn') as HTMLElement;
+    const autoScrollBtn = this.container.querySelector('#diag-autoscroll-toggle') as HTMLElement;
+    const resumeBtn = this.container.querySelector('#diag-resume-autoscroll') as HTMLElement;
 
     levelSelect.addEventListener('change', () => {
       this.filterLevel = levelSelect.value;
@@ -105,11 +115,58 @@ export class DiagnosticsComponent {
     exportBtn.addEventListener('click', () => {
       this.exportReport();
     });
+
+    autoScrollBtn?.addEventListener('click', () => {
+      this.autoScroll = !this.autoScroll;
+      this.updateAutoScrollBtn();
+      if (this.autoScroll && list) {
+        list.scrollTop = list.scrollHeight;
+        if (resumeBtn) resumeBtn.style.display = 'none';
+      }
+    });
+
+    resumeBtn?.addEventListener('click', () => {
+      this.autoScroll = true;
+      this.updateAutoScrollBtn();
+      if (list) {
+        list.scrollTop = list.scrollHeight;
+      }
+      resumeBtn.style.display = 'none';
+    });
+
+    // Detect user manual scroll up/down
+    list.addEventListener('scroll', () => {
+      const isAtBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
+      if (!isAtBottom) {
+        if (this.autoScroll) {
+          this.autoScroll = false;
+          this.updateAutoScrollBtn();
+        }
+        if (resumeBtn) resumeBtn.style.display = 'flex';
+      } else {
+        if (!this.autoScroll) {
+          this.autoScroll = true;
+          this.updateAutoScrollBtn();
+        }
+        if (resumeBtn) resumeBtn.style.display = 'none';
+      }
+    });
+  }
+
+  private updateAutoScrollBtn() {
+    const btn = this.container.querySelector('#diag-autoscroll-toggle') as HTMLElement;
+    if (btn) {
+      btn.textContent = this.autoScroll ? '⚡ Auto-Scroll: ON' : '⏸ Auto-Scroll: OFF';
+      btn.style.borderColor = this.autoScroll ? 'var(--primary)' : 'var(--border-color)';
+      btn.style.color = this.autoScroll ? '#00e5ff' : 'var(--text-muted)';
+    }
   }
 
   private renderLogs() {
     const list = this.container.querySelector('#diag-log-list') as HTMLElement;
     if (!list) return;
+
+    const previousScrollTop = list.scrollTop;
 
     const filtered = this.logs.filter((entry) => {
       const matchLevel =
@@ -145,6 +202,8 @@ export class DiagnosticsComponent {
 
     if (this.autoScroll) {
       list.scrollTop = list.scrollHeight;
+    } else {
+      list.scrollTop = previousScrollTop;
     }
   }
 
