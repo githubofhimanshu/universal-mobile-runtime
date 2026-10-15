@@ -278,4 +278,15 @@ Connection: close\r\n\
         let list_resp3: Value = serde_json::from_str(&list_resp_str3).unwrap();
         assert_eq!(list_resp3["result"].as_array().unwrap().len(), 0);
     }
+
+    #[test]
+    fn test_rpc_ios_gap_report_error_path() {
+        let handler = setup_test_handler();
+        let raw_req = r#"{"jsonrpc":"2.0","id":103,"method":"umr.ios.gap_report","params":{"package_path":"/nonexistent/app.ipa"}}"#;
+        let resp_str = handler.handle_raw_message(raw_req);
+        let resp: Value = serde_json::from_str(&resp_str).unwrap();
+        assert_eq!(resp["jsonrpc"], "2.0");
+        assert_eq!(resp["id"], 103);
+        assert!(resp["error"].is_object());
+    }
 }

@@ -1,0 +1,18 @@
+[package]
+name = "umr-backend-ios"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Universal Mobile Runtime iOS Tiered Execution Backend (macOS Simulator, 32-bit Legacy HLE, and Tethered Stream)"
+
+[dependencies]
+umr-core = { path = "../umr-core" }
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile = "3.10"
+

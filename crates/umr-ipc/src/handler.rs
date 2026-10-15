@@ -413,6 +413,32 @@ impl RpcHandler {
                 }
             }
 
+            "umr.ios.gap_report" => {
+                let params: PackagePathParams = match parse_params(req.params) {
+                    Ok(p) => p,
+                    Err(e) => return RpcResponse::error(id, e),
+                };
+
+                let orch = self.orchestrator.lock().unwrap();
+                let meta = match orch.inspect_package(Path::new(&params.package_path)) {
+                    Ok(m) => m,
+                    Err(err) => {
+                        return RpcResponse::error(
+                            id,
+                            RpcError::execution_error(err.message.clone(), Some(json!(err))),
+                        );
+                    }
+                };
+
+                match umr_backend_ios::FrameworkGapTracker::audit_package(&meta) {
+                    Ok(report) => RpcResponse::success(id, json!(report)),
+                    Err(err) => RpcResponse::error(
+                        id,
+                        RpcError::execution_error(err.message.clone(), Some(json!(err))),
+                    ),
+                }
+            }
+
             unknown => RpcResponse::error(id, RpcError::method_not_found(unknown)),
         }
     }

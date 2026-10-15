@@ -42,6 +42,12 @@ Update this file only from reproducible tests or clearly labelled manual results
 | `TEST-P3-PKG-01` | `org.umr.sample.app` | APK | Windows 11 / x86-64 | `umr-backend-android` 0.2.0 | `LocalVirtualized` | **Verified** | Persistent catalog, state-preserving upgrade, downgrade rejection & clean uninstall (2026-10-15) |
 | `TEST-P3-RES-01` | `watchdog-crash-containment` | Watchdog | Windows 11 / x86-64 | `umr-backend-android` 0.2.0 | `LocalVirtualized` | **Verified** | ANR monitoring, signal 11/6 stack trace extraction, session crash isolation (2026-10-15) |
 | `TEST-P3-IPC-01` | `umr-ipc-phase3-extensions` | JSON-RPC | Windows 11 / x86-64 | `umr-ipc` 0.1.0 | `LocalNative` | **Verified** | `umr.host.capabilities`, `umr.packages.list`, `umr.packages.uninstall` endpoints (2026-10-15) |
+| `TEST-P4-GAP-01` | `framework-gap-tracker` | Audit | All Desktop Hosts | `umr-backend-ios` 0.2.0 | N/A | **Verified** | Automated gap analysis: UIKit, Metal, StoreKit, CloudKit & FairPlay DRM (2026-10-15) |
+| `TEST-P4-SIM-01` | `com.dev.simulatorapp` | IPA | macOS 14+ / ARM64 & x86-64 | `umr-backend-ios` 0.2.0 | `LocalNative` | **Verified** | Track A: Apple Simulator runtime lifecycle, 1170x2532 Retina frames, non-sim rejection (2026-10-15) |
+| `TEST-P4-HLE-01` | `com.retro.game` | IPA | Windows / Linux / macOS | `umr-backend-ios` 0.2.0 | `LocalHle` | **Verified** | Track B: 32-bit ARMv7 HLE lifecycle, 320x480 frames, strict ARM64 rejection (2026-10-15) |
+| `TEST-P4-REM-01` | `com.modern.metalapp` | IPA | Windows / Linux / macOS | `umr-backend-ios` 0.2.0 | `RemoteStream` | **Verified** | Track C: Tethered device bridge, mandatory `RemoteStream` labeling & watermarked frames (2026-10-15) |
+| `TEST-P4-NEG-01` | `tiered-ios-negotiation` | Policy | All Desktop Hosts | `umr-core` 0.1.0 | Multiple | **Verified** | Capability routing: Track A (macOS sim), Track B (32-bit), Track C (modern), DRM rejection (2026-10-15) |
+| `TEST-P4-IPC-01` | `umr-ipc-phase4-extensions` | JSON-RPC | Windows 11 / x86-64 | `umr-ipc` 0.1.0 | `LocalNative` | **Verified** | `umr.ios.gap_report` endpoint and tiered iOS backend registrations (2026-10-15) |
 
 ## Required cohorts
 

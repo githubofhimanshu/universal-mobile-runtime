@@ -6,6 +6,7 @@ members = [
     "crates/umr-orchestrator",
     "crates/umr-backend-reference",
     "crates/umr-backend-android",
+    "crates/umr-backend-ios",
     "crates/umr-ipc",
 ]
 

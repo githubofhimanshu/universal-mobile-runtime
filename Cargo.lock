@@ -762,6 +762,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "umr-backend-ios"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 1.0.69",
+ "umr-core",
+]
+
+[[package]]
 name = "umr-backend-reference"
 version = "0.1.0"
 dependencies = [
@@ -811,6 +823,7 @@ dependencies = [
  "tempfile",
  "thiserror 1.0.69",
  "umr-backend-android",
+ "umr-backend-ios",
  "umr-backend-reference",
  "umr-core",
  "umr-orchestrator",
