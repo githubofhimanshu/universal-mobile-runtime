@@ -14,6 +14,7 @@ pub struct ActiveSession {
     pub backend_id: String,
     pub execution_mode: ExecutionMode,
     pub report: DiagnosticReport,
+    pub log_cursor: usize,
 }
 
 impl ActiveSession {
@@ -32,6 +33,7 @@ impl ActiveSession {
             backend_id,
             execution_mode,
             report,
+            log_cursor: 0,
         }
     }
 

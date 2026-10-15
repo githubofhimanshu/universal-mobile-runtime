@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use umr_core::{ExecutionMode, FrameBuffer, FrameStats, PixelFormat};
+use umr_core::{ExecutionMode, FrameBuffer, FrameStats, NavigationButton, PixelFormat};
 
 use crate::input::ActiveTouchState;
 
@@ -62,6 +62,7 @@ impl FrameBufferPipeline {
         package_name: &str,
         execution_mode: ExecutionMode,
         active_touch: Option<ActiveTouchState>,
+        latest_nav: Option<(NavigationButton, Instant)>,
     ) -> FrameBuffer {
         self.frame_index += 1;
         let now = Instant::now();
@@ -167,18 +168,61 @@ impl FrameBufferPipeline {
         let nav_y = h.saturating_sub(nav_h);
         fill_rect(pixels, w, 0, nav_y, w, nav_h, 0x0A, 0x0A, 0x0A, 0xFF);
 
+        // Check if navigation key was recently activated (within 1000ms)
+        let is_recent_nav = latest_nav.map(|(_, t)| t.elapsed().as_millis() < 1000).unwrap_or(false);
+        let active_nav_btn = if is_recent_nav { latest_nav.map(|(b, _)| b) } else { None };
+
         // Navigation Buttons
         let center_x = w / 2;
         let back_x = center_x / 2;
         let recents_x = center_x + back_x;
         let btn_y = nav_y + (nav_h / 2);
 
-        // Back button: Left-pointing triangle
-        draw_triangle_left(pixels, w, back_x, btn_y, 7, 0xCC, 0xCC, 0xCC);
-        // Home button: Circle
-        draw_circle(pixels, w, h, center_x, btn_y, 7, 0xCC, 0xCC, 0xCC, 0xFF);
-        // Recents button: Rounded Square
-        fill_rect(pixels, w, recents_x - 6, btn_y - 6, 12, 12, 0xCC, 0xCC, 0xCC, 0xFF);
+        // Back button
+        let back_color = if active_nav_btn == Some(NavigationButton::Back) {
+            draw_circle(pixels, w, h, back_x, btn_y, 14, 0x00, 0xE5, 0xFF, 0x55);
+            (0x00, 0xE5, 0xFF)
+        } else {
+            (0xCC, 0xCC, 0xCC)
+        };
+        draw_triangle_left(pixels, w, back_x, btn_y, 7, back_color.0, back_color.1, back_color.2);
+
+        // Home button
+        let home_color = if active_nav_btn == Some(NavigationButton::Home) {
+            draw_circle(pixels, w, h, center_x, btn_y, 14, 0x00, 0xE5, 0xFF, 0x55);
+            (0x00, 0xE5, 0xFF)
+        } else {
+            (0xCC, 0xCC, 0xCC)
+        };
+        draw_circle(pixels, w, h, center_x, btn_y, 7, home_color.0, home_color.1, home_color.2, 0xFF);
+
+        // Recents button
+        let recents_color = if active_nav_btn == Some(NavigationButton::Recents) {
+            draw_circle(pixels, w, h, recents_x, btn_y, 14, 0x00, 0xE5, 0xFF, 0x55);
+            (0x00, 0xE5, 0xFF)
+        } else {
+            (0xCC, 0xCC, 0xCC)
+        };
+        fill_rect(pixels, w, recents_x - 6, btn_y - 6, 12, 12, recents_color.0, recents_color.1, recents_color.2, 0xFF);
+
+        // 7. On-screen Toast Notification for Navigation Input
+        if let Some((btn, instant)) = latest_nav {
+            if instant.elapsed().as_millis() < 1400 {
+                let (btn_title, key_info) = match btn {
+                    NavigationButton::Back => ("NAV: BACK", "KEYCODE_BACK (4)"),
+                    NavigationButton::Home => ("NAV: HOME", "KEYCODE_HOME (3)"),
+                    NavigationButton::Recents => ("NAV: RECENTS", "APP_SWITCH (187)"),
+                };
+                let toast_w = 260;
+                let toast_h = 32;
+                let toast_x = (w.saturating_sub(toast_w)) / 2;
+                let toast_y = h.saturating_sub(90);
+                fill_rect(pixels, w, toast_x, toast_y, toast_w, toast_h, 0x21, 0x21, 0x21, 0xEE);
+                fill_rect(pixels, w, toast_x, toast_y, toast_w, 2, 0x00, 0xE5, 0xFF, 0xFF);
+                draw_text(pixels, w, toast_x + 12, toast_y + 11, btn_title, 0x00, 0xE5, 0xFF);
+                draw_text(pixels, w, toast_x + 100, toast_y + 11, key_info, 0xEE, 0xEE, 0xEE);
+            }
+        }
 
         fb.timestamp_ms = timestamp_ms;
         fb.frame_index = self.frame_index;
@@ -404,6 +448,7 @@ mod tests {
                 action: umr_core::PointerAction::Down,
                 received_at: Instant::now(),
             }),
+            None,
         );
 
         assert_eq!(fb.width, 360);

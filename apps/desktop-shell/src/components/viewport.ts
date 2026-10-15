@@ -201,9 +201,25 @@ export class ViewportComponent {
       button,
     };
 
-    this.client.sendInput(this.activeSessionId, payload).catch((err) => {
-      console.warn('Navigation sendInput failed:', err);
-    });
+    const keycodeName =
+      button === 'back'
+        ? 'KEYCODE_BACK (4)'
+        : button === 'home'
+        ? 'KEYCODE_HOME (3)'
+        : 'KEYCODE_APP_SWITCH (187)';
+
+    this.flashFeedback(`Navigation: ${keycodeName} dispatched`);
+
+    this.client
+      .sendInput(this.activeSessionId, payload)
+      .then(() => {
+        if (this.onLogUpdateCallback && this.activeSessionId) {
+          this.onLogUpdateCallback(this.activeSessionId);
+        }
+      })
+      .catch((err) => {
+        console.warn('Navigation sendInput failed:', err);
+      });
   }
 
   async attachSession(sessionId: string, packageName: string) {
@@ -223,6 +239,7 @@ export class ViewportComponent {
 
   private startRenderLoop() {
     let lastPoll = 0;
+    let lastLogPoll = 0;
 
     const loop = async (timestamp: number) => {
       if (!this.isRunning || !this.activeSessionId) return;
@@ -243,8 +260,12 @@ export class ViewportComponent {
             this.lastFrameTimestamp = timestamp;
           }
 
-          if (this.onLogUpdateCallback) {
-            this.onLogUpdateCallback(this.activeSessionId);
+          // Stream live diagnostics every 500ms
+          if (timestamp - lastLogPoll >= 500) {
+            lastLogPoll = timestamp;
+            if (this.onLogUpdateCallback) {
+              this.onLogUpdateCallback(this.activeSessionId);
+            }
           }
         } catch (e) {
           // If session ended, break loop

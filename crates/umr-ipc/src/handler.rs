@@ -237,8 +237,9 @@ impl RpcHandler {
                     Err(e) => return RpcResponse::error(id, e),
                 };
 
-                let orch = self.orchestrator.lock().unwrap();
+                let mut orch = self.orchestrator.lock().unwrap();
                 let session_id = SessionId(params.session_id);
+                let _ = orch.sync_diagnostics(&session_id);
                 match orch.get_report(&session_id) {
                     Ok(report) => RpcResponse::success(id, json!(report)),
                     Err(err) => RpcResponse::error(
@@ -262,7 +263,10 @@ impl RpcHandler {
                 let mut orch = self.orchestrator.lock().unwrap();
                 let session_id = SessionId(params.session_id);
                 match orch.send_input(&session_id, core_event) {
-                    Ok(()) => RpcResponse::success(id, json!({ "status": "delivered" })),
+                    Ok(()) => {
+                        let _ = orch.sync_diagnostics(&session_id);
+                        RpcResponse::success(id, json!({ "status": "delivered" }))
+                    }
                     Err(err) => RpcResponse::error(
                         id,
                         RpcError::execution_error(err.message.clone(), Some(json!(err))),

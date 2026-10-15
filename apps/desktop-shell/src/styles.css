@@ -464,6 +464,12 @@ body {
   color: #fff;
 }
 
+.nav-btn:active {
+  background-color: rgba(0, 229, 255, 0.25);
+  color: #00e5ff;
+  transform: scale(0.92);
+}
+
 /* Diagnostics Drawer */
 .diagnostics-drawer {
   display: flex;
