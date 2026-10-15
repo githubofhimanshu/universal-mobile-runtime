@@ -87,8 +87,8 @@ impl Drop for HttpServer {
 }
 
 fn handle_http_client(mut stream: TcpStream, handler: Arc<RpcHandler>) -> std::io::Result<()> {
-    let _ = stream.set_read_timeout(Some(Duration::from_secs(5)));
-    let _ = stream.set_write_timeout(Some(Duration::from_secs(5)));
+    let _ = stream.set_read_timeout(Some(Duration::from_secs(60)));
+    let _ = stream.set_write_timeout(Some(Duration::from_secs(60)));
 
     let mut reader = BufReader::new(stream.try_clone()?);
     let mut request_line = String::new();
@@ -105,6 +105,7 @@ fn handle_http_client(mut stream: TcpStream, handler: Arc<RpcHandler>) -> std::i
     let path = parts[1];
 
     let mut content_length: usize = 0;
+    let mut filename_header: Option<String> = None;
     loop {
         let mut header_line = String::new();
         if reader.read_line(&mut header_line)? == 0 {
@@ -119,6 +120,11 @@ fn handle_http_client(mut stream: TcpStream, handler: Arc<RpcHandler>) -> std::i
                 content_length = len_str.trim().parse().unwrap_or(0);
             }
         }
+        if trimmed.to_lowercase().starts_with("x-filename:") {
+            if let Some(f) = trimmed.split(':').nth(1) {
+                filename_header = Some(f.trim().to_string());
+            }
+        }
     }
 
     // Handle CORS preflight
@@ -126,7 +132,7 @@ fn handle_http_client(mut stream: TcpStream, handler: Arc<RpcHandler>) -> std::i
         let response = "HTTP/1.1 204 No Content\r\n\
 Access-Control-Allow-Origin: *\r\n\
 Access-Control-Allow-Methods: POST, GET, OPTIONS\r\n\
-Access-Control-Allow-Headers: Content-Type, Authorization\r\n\
+Access-Control-Allow-Headers: Content-Type, Authorization, X-Filename\r\n\
 \r\n";
         stream.write_all(response.as_bytes())?;
         return Ok(());
@@ -200,6 +206,74 @@ Content-Length: {}\r\n\
                 }
             }
         }
+    }
+
+    // Handle File Upload POST
+    if method == "POST" && (path == "/upload" || path.starts_with("/upload?")) {
+        let mut body_bytes = vec![0u8; content_length];
+        reader.read_exact(&mut body_bytes)?;
+
+        let raw_filename = filename_header.unwrap_or_else(|| "uploaded_package.apk".to_string());
+        let decoded_name = raw_filename
+            .replace("%20", " ")
+            .replace("%28", "(")
+            .replace("%29", ")")
+            .replace("%2B", "+")
+            .replace("%2D", "-")
+            .replace("%5F", "_");
+
+        let sanitized = std::path::Path::new(&decoded_name)
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("package.apk")
+            .replace("..", "")
+            .replace('/', "")
+            .replace('\\', "");
+
+        let upload_dir = std::path::PathBuf::from("target/umr-sandbox/uploads");
+        if let Err(e) = std::fs::create_dir_all(&upload_dir) {
+            let err_body = format!("{{\"error\":\"Failed to create upload directory: {}\"}}", e);
+            let response = format!(
+                "HTTP/1.1 500 Internal Server Error\r\nContent-Type: application/json\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\nContent-Length: {}\r\n\r\n{}",
+                err_body.len(),
+                err_body
+            );
+            stream.write_all(response.as_bytes())?;
+            return Ok(());
+        }
+
+        let target_path = upload_dir.join(&sanitized);
+        if let Err(e) = std::fs::write(&target_path, &body_bytes) {
+            let err_body = format!("{{\"error\":\"Failed to write uploaded file: {}\"}}", e);
+            let response = format!(
+                "HTTP/1.1 500 Internal Server Error\r\nContent-Type: application/json\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\nContent-Length: {}\r\n\r\n{}",
+                err_body.len(),
+                err_body
+            );
+            stream.write_all(response.as_bytes())?;
+            return Ok(());
+        }
+
+        let package_path_str = target_path.to_string_lossy().to_string().replace('\\', "/");
+        let body = format!(
+            "{{\"status\":\"uploaded\",\"package_path\":\"{}\",\"size\":{}}}",
+            package_path_str,
+            body_bytes.len()
+        );
+
+        let response = format!(
+            "HTTP/1.1 200 OK\r\n\
+Content-Type: application/json\r\n\
+Access-Control-Allow-Origin: *\r\n\
+Connection: close\r\n\
+Content-Length: {}\r\n\
+\r\n\
+{}",
+            body.len(),
+            body
+        );
+        stream.write_all(response.as_bytes())?;
+        return Ok(());
     }
 
     // Handle RPC POST

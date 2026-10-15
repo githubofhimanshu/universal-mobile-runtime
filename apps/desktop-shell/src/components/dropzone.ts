@@ -37,7 +37,11 @@ export class DropzoneComponent {
               id="dz-path-input" 
               placeholder="Or enter host package path (e.g. tests/fixtures/synthetic-app.apk)" 
             />
-            <button class="btn btn-primary" id="dz-inspect-btn">
+            <input type="file" id="dz-file-picker" accept=".apk,.ipa" style="display: none;" />
+            <button class="btn btn-secondary" id="dz-browse-btn" type="button" style="white-space: nowrap;">
+              📁 Browse...
+            </button>
+            <button class="btn btn-primary" id="dz-inspect-btn" style="white-space: nowrap;">
               ⚡ Inspect & Import
             </button>
           </div>
@@ -52,6 +56,20 @@ export class DropzoneComponent {
     const box = this.container.querySelector('#dropzone-box') as HTMLElement;
     const pathInput = this.container.querySelector('#dz-path-input') as HTMLInputElement;
     const inspectBtn = this.container.querySelector('#dz-inspect-btn') as HTMLElement;
+    const browseBtn = this.container.querySelector('#dz-browse-btn') as HTMLElement;
+    const filePicker = this.container.querySelector('#dz-file-picker') as HTMLInputElement;
+
+    browseBtn.addEventListener('click', () => {
+      filePicker.click();
+    });
+
+    filePicker.addEventListener('change', async () => {
+      if (filePicker.files && filePicker.files.length > 0) {
+        const file = filePicker.files[0];
+        pathInput.value = file.name;
+        await this.uploadAndInspectFile(file);
+      }
+    });
 
     // Drag-over styling
     box.addEventListener('dragover', (e) => {
@@ -69,9 +87,8 @@ export class DropzoneComponent {
 
       if (e.dataTransfer && e.dataTransfer.files.length > 0) {
         const file = e.dataTransfer.files[0];
-        // In browser environments without full FS access, we fallback to file.name or entered path
         pathInput.value = file.name;
-        await this.inspectPath(file.name);
+        await this.uploadAndInspectFile(file);
       }
     });
 
@@ -90,6 +107,43 @@ export class DropzoneComponent {
         }
       }
     });
+  }
+
+  private async uploadAndInspectFile(file: File) {
+    const box = this.container.querySelector('#dropzone-box') as HTMLElement;
+    box.classList.add('dropzone-loading');
+    const pathInput = this.container.querySelector('#dz-path-input') as HTMLInputElement;
+
+    try {
+      // 1. Upload file binary to backend
+      const res = await fetch('/upload', {
+        method: 'POST',
+        headers: {
+          'X-Filename': encodeURIComponent(file.name),
+        },
+        body: await file.arrayBuffer(),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Upload failed' }));
+        throw new Error(err.error || 'Failed to upload package to runtime sandbox');
+      }
+
+      const uploadData = await res.json();
+      pathInput.value = uploadData.package_path;
+
+      // 2. Negotiate and inspect uploaded package
+      await this.inspectPath(uploadData.package_path);
+    } catch (err: any) {
+      box.classList.remove('dropzone-loading');
+      if (this.onShowErrorModal) {
+        this.onShowErrorModal('Package Upload & Intake Failed', {
+          error_code: 'ERR_UPLOAD_FAILED',
+          message: err.message || String(err),
+          recommendation: 'Check that the runtime daemon is running and has write permissions to target/umr-sandbox.',
+        });
+      }
+    }
   }
 
   private async inspectPath(filePath: string) {
