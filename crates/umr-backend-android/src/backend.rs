@@ -43,7 +43,7 @@ impl AndroidVirtualizationBackend {
             supported_abis: host_caps.supported_guest_abis,
             supported_architectures: vec![host_caps.host_cpu],
             min_api_level: Some(21),
-            max_api_level: Some(34),
+            max_api_level: Some(36),
             requires_hardware_virtualization: host_caps.hardware_virtualization_available,
             requires_external_device: false,
         };

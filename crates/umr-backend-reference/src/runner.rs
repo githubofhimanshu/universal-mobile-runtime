@@ -58,9 +58,9 @@ impl ReferenceAndroidBackend {
         let _ = create_dir_all(&root);
 
         let capabilities = BackendCapabilities {
-            backend_id: "android-reference-backend".to_string(),
+            backend_id: "android-reference-hle".to_string(),
             backend_version: "0.1.0".to_string(),
-            execution_mode: ExecutionMode::LocalNative,
+            execution_mode: ExecutionMode::LocalHle,
             supported_abis: vec![
                 TargetAbi::X86_64,
                 TargetAbi::Arm64V8a,

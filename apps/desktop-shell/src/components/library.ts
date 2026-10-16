@@ -53,15 +53,28 @@ export class LibraryComponent {
   private initDefaultCatalog() {
     this.apps = [
       {
+        id: 'ymusic-arm64',
+        name: 'YMusic Player (ARM64)',
+        packageName: 'com.kapp.youtube.final',
+        version: '4.4.98',
+        format: 'apk',
+        filePath: 'target/umr-sandbox/uploads/4498_ymusic_arm64.apk',
+        executionMode: 'local_virtualized',
+        executionModeLabel: '⚡ Virtualized (WHPX)',
+        detailsSummary: 'Android 16 • ARM64 Native Translation • Real Interactive App',
+        iconText: '🎵',
+        isCompatible: true,
+      },
+      {
         id: 'synthetic-hello',
         name: 'Synthetic Hello App',
         packageName: 'org.umr.synthetic.hello',
         version: '1.0.0',
         format: 'apk',
         filePath: 'tests/fixtures/synthetic-app.apk',
-        executionMode: 'local_native',
-        executionModeLabel: 'Local (Native)',
-        detailsSummary: 'Android 14 (API 21..34) • x86_64, Arm64',
+        executionMode: 'local_hle',
+        executionModeLabel: 'Reference (HLE)',
+        detailsSummary: 'Android 14 (API 21..34) • Synthetic Emulation Sandbox',
         iconText: '🤖',
         isCompatible: true,
       },
@@ -238,8 +251,11 @@ export class LibraryComponent {
 
   private async handleLaunch(app: AppEntry, selectedBackend?: string) {
     try {
+      // Prioritize real virtualization backend for Android apps
+      const targetBackend = selectedBackend || (app.format === 'apk' ? 'android-virt-windows' : undefined);
+
       // 1. Prepare session
-      const prepRes = await this.client.prepareSession(app.filePath, selectedBackend);
+      const prepRes = await this.client.prepareSession(app.filePath, targetBackend);
 
       // 2. Launch session
       await this.client.launchSession(prepRes.session_id);

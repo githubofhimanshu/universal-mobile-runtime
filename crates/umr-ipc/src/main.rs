@@ -44,11 +44,7 @@ fn main() {
     };
 
     let mut orch = RuntimeOrchestrator::new(intake_bin);
-    // Register reference Android backend
-    let ref_backend = ReferenceAndroidBackend::new(&cli.sandbox);
-    orch.register_android(Box::new(ref_backend));
-
-    // Register production Android virtualization backend
+    // 1. Register production Android virtualization backend (prioritized)
     match AndroidVirtualizationBackend::new_auto(&cli.sandbox) {
         Ok(virt_backend) => {
             println!("[umr-ipc] Registered virtualization backend: {}", virt_backend.id());
@@ -58,6 +54,10 @@ fn main() {
             eprintln!("[umr-ipc] Warning: Virtualization backend unavailable: {}", err);
         }
     }
+
+    // 2. Register reference Android HLE runner as secondary fallback
+    let ref_backend = ReferenceAndroidBackend::new(&cli.sandbox);
+    orch.register_android(Box::new(ref_backend));
 
     // Register iOS tiered backends
     let sim_backend = IosSimulatorBackend::new(&cli.sandbox);
