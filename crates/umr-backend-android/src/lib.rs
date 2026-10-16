@@ -2,6 +2,7 @@ pub mod backend;
 pub mod host_detector;
 pub mod hypervisor;
 pub mod package_manager;
+pub mod supervisor;
 pub mod transport;
 pub mod watchdog;
 
@@ -12,6 +13,7 @@ pub use hypervisor::{
     WhpxAdapter,
 };
 pub use package_manager::{AndroidPackageManager, InstalledPackageRecord};
+pub use supervisor::{AvdProvisioner, GuestSupervisor, SystemImageInfo};
 pub use transport::{
     AdbTransport, CommandOutput, GuestTransport, MockGuestTransport, VsockTransport,
 };
