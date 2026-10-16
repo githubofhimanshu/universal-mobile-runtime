@@ -93,7 +93,12 @@ impl HostPlatformDetector {
                 let abis = if host_cpu == CpuArchitecture::Arm64 {
                     vec![TargetAbi::Arm64V8a, TargetAbi::ArmeabiV7a]
                 } else {
-                    vec![TargetAbi::X86_64, TargetAbi::X86]
+                    vec![
+                        TargetAbi::X86_64,
+                        TargetAbi::X86,
+                        TargetAbi::Arm64V8a,
+                        TargetAbi::ArmeabiV7a,
+                    ]
                 };
                 (kind, whpx_avail, false, exec_mode, abis)
             }
@@ -110,7 +115,12 @@ impl HostPlatformDetector {
                 let abis = if host_cpu == CpuArchitecture::Arm64 {
                     vec![TargetAbi::Arm64V8a, TargetAbi::ArmeabiV7a]
                 } else {
-                    vec![TargetAbi::X86_64, TargetAbi::X86]
+                    vec![
+                        TargetAbi::X86_64,
+                        TargetAbi::X86,
+                        TargetAbi::Arm64V8a,
+                        TargetAbi::ArmeabiV7a,
+                    ]
                 };
                 (kind, kvm_avail, binderfs_avail, exec_mode, abis)
             }

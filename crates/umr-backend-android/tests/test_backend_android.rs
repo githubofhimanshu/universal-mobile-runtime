@@ -292,3 +292,31 @@ fn test_android_virtualization_backend_full_lifecycle() {
     // 8. Wipe Storage
     backend.wipe_storage(&session).unwrap();
 }
+
+#[test]
+fn test_adb_transport_offline_graceful_handling() {
+    let adb = AdbTransport::new("127.0.0.1:59999".parse().unwrap());
+    assert!(!adb.is_alive());
+    let err = adb.execute_command("pm list packages").unwrap_err();
+    assert_eq!(err.code, ErrorCode::ErrBackendUnavailable);
+    assert!(err.suggestion.is_some());
+}
+
+#[test]
+fn test_virtualization_backend_offline_launch_guidance() {
+    let tmp = tempdir().unwrap();
+    // AdbTransport pointing to closed port
+    let adb_transport = Box::new(AdbTransport::new("127.0.0.1:59998".parse().unwrap()));
+    let mut backend = AndroidVirtualizationBackend::with_transport(tmp.path(), adb_transport).unwrap();
+
+    let mut session = SessionRecord::new("org.umr.offline.test");
+    session.transition_to(LifecycleState::Preparing).unwrap();
+    let pkg = create_test_package("org.umr.offline.test", 1, "/test/path/app.apk");
+    backend.prepare(&mut session, &pkg).unwrap();
+
+    session.transition_to(LifecycleState::Running).unwrap();
+    let err = backend.launch(&mut session).unwrap_err();
+    assert_eq!(err.code, ErrorCode::ErrBackendUnavailable);
+    assert!(err.message.contains("No active Android virtualization guest found"));
+    assert!(err.suggestion.unwrap().contains("adb connect"));
+}

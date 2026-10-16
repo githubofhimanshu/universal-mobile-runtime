@@ -25,7 +25,7 @@ export class LibraryComponent {
     app: AppEntry,
     neg: NegotiationResult,
     meta: PackageMetadata,
-    onLaunch?: (app: AppEntry) => void
+    onLaunch?: (app: AppEntry, backendId?: string) => void
   ) => void;
 
   constructor(container: HTMLElement, client: UMRClient) {
@@ -42,7 +42,7 @@ export class LibraryComponent {
       app: AppEntry,
       neg: NegotiationResult,
       meta: PackageMetadata,
-      onLaunch?: (app: AppEntry) => void
+      onLaunch?: (app: AppEntry, backendId?: string) => void
     ) => void
   ) {
     this.onLaunchApp = onLaunch;
@@ -236,10 +236,10 @@ export class LibraryComponent {
     });
   }
 
-  private async handleLaunch(app: AppEntry) {
+  private async handleLaunch(app: AppEntry, selectedBackend?: string) {
     try {
       // 1. Prepare session
-      const prepRes = await this.client.prepareSession(app.filePath);
+      const prepRes = await this.client.prepareSession(app.filePath, selectedBackend);
 
       // 2. Launch session
       await this.client.launchSession(prepRes.session_id);
@@ -261,8 +261,8 @@ export class LibraryComponent {
     try {
       const res = await this.client.negotiate(app.filePath);
       if (this.onShowInspectModal) {
-        this.onShowInspectModal(app, res.negotiation, res.metadata, (targetApp) => {
-          this.handleLaunch(targetApp);
+        this.onShowInspectModal(app, res.negotiation, res.metadata, (targetApp, selectedBackend) => {
+          this.handleLaunch(targetApp, selectedBackend);
         });
       }
     } catch (e: any) {

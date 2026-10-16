@@ -93,7 +93,7 @@ export class DesktopShellApp {
       (title: string, error: any) => {
         this.modals.showErrorModal(title, error);
       },
-      (app: AppEntry, neg: any, meta: any, onLaunch?: (app: AppEntry) => void) => {
+      (app: AppEntry, neg: any, meta: any, onLaunch?: (app: AppEntry, backendId?: string) => void) => {
         this.modals.showInspectModal(app, neg, meta, onLaunch);
       }
     );

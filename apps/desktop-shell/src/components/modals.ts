@@ -48,7 +48,7 @@ export class ModalManager {
     this.attachCloseHandlers();
   }
 
-  showInspectModal(app: AppEntry, neg: NegotiationResult, meta: PackageMetadata, onLaunch?: (app: AppEntry) => void) {
+  showInspectModal(app: AppEntry, neg: NegotiationResult, meta: PackageMetadata, onLaunch?: (app: AppEntry, backendId?: string) => void) {
     const d: any = meta.details || {};
     const androidInfo = d.android || (d.platform === 'android' ? d : null) || (meta.format === 'apk' ? d : null);
     const iosInfo = d.ios || (d.platform === 'ios' ? d : null) || (meta.format === 'ipa' ? d : null);
@@ -77,6 +77,19 @@ export class ModalManager {
       `;
     }
 
+    const backendOptions = meta.format === 'apk'
+      ? `
+        <option value="" selected>Auto-Negotiated (${neg.result === 'compatible' ? neg.backend_id : 'Default'})</option>
+        <option value="android-virt-windows">⚡ System Virtualization (Android Virtualization Backend / ADB)</option>
+        <option value="android-reference-hle">🧪 Reference HLE Runner (Isolated Emulation)</option>
+      `
+      : `
+        <option value="" selected>Auto-Negotiated (${neg.result === 'compatible' ? neg.backend_id : 'Default'})</option>
+        <option value="ios-simulator">⚡ iOS Simulator Backend (macOS)</option>
+        <option value="ios-hle">🧪 iOS HLE Isolation Runner</option>
+        <option value="ios-remote-stream">📡 iOS Remote Device Streaming</option>
+      `;
+
     this.container.innerHTML = `
       <div class="modal-backdrop">
         <div class="modal-card">
@@ -92,6 +105,18 @@ export class ModalManager {
             <div class="meta-section">
               <h4>Capability Negotiation</h4>
               ${negContent}
+            </div>
+
+            <div class="meta-section">
+              <h4>Execution Backend Target</h4>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <select id="modal-backend-select" class="select-filter" style="width: 100%; background: #252830; color: #fff; padding: 8px 12px; border: 1px solid #3d4251; border-radius: 6px; font-size: 13px;">
+                  ${backendOptions}
+                </select>
+                <div style="font-size: 11px; color: #8e95a5;">
+                  Select a specific target backend or use Auto-Negotiated to prioritize the highest-performance tier.
+                </div>
+              </div>
             </div>
 
             <div class="meta-section">
@@ -141,7 +166,7 @@ export class ModalManager {
     this.attachInspectCloseHandlers(onLaunch, app);
   }
 
-  private attachInspectCloseHandlers(onLaunch?: (app: AppEntry) => void, app?: AppEntry) {
+  private attachInspectCloseHandlers(onLaunch?: (app: AppEntry, backendId?: string) => void, app?: AppEntry) {
     const closeBtn = this.container.querySelector('#modal-close');
     const confirmBtn = this.container.querySelector('#modal-confirm-btn');
     const launchBtn = this.container.querySelector('#modal-launch-btn');
@@ -159,8 +184,10 @@ export class ModalManager {
 
     if (launchBtn && onLaunch && app) {
       launchBtn.addEventListener('click', () => {
+        const select = this.container.querySelector('#modal-backend-select') as HTMLSelectElement | null;
+        const selectedBackend = select && select.value ? select.value : undefined;
         close();
-        onLaunch(app);
+        onLaunch(app, selectedBackend);
       });
     }
   }

@@ -137,7 +137,9 @@ impl CapabilityNegotiator {
     ) -> NegotiationResult {
         match &package.details {
             PackageDetails::Android(info) => {
-                // Check if any registered Android backend can execute this package
+                let mut compatible_candidates = Vec::new();
+
+                // Check all registered Android backends and rank by execution tier
                 for backend in android_backends {
                     let caps = backend.capabilities();
 
@@ -153,20 +155,30 @@ impl CapabilityNegotiator {
                     // Check ABI compatibility:
                     // If pure DEX (no native libs), any Android backend matches.
                     // If native libraries exist, check if backend supports at least one ABI.
-                    if info.is_pure_dex || info.native_abis.is_empty() {
-                        return NegotiationResult::Compatible {
-                            backend_id: caps.backend_id.clone(),
-                            execution_mode: caps.execution_mode,
-                        };
-                    }
+                    let matches_abi = info.is_pure_dex
+                        || info.native_abis.is_empty()
+                        || info.native_abis.iter().any(|abi| caps.supported_abis.contains(abi));
 
-                    let matches_abi = info.native_abis.iter().any(|abi| caps.supported_abis.contains(abi));
                     if matches_abi {
-                        return NegotiationResult::Compatible {
-                            backend_id: caps.backend_id.clone(),
-                            execution_mode: caps.execution_mode,
+                        let rank = match caps.execution_mode {
+                            ExecutionMode::LocalNative => 1,
+                            ExecutionMode::LocalVirtualized => 2,
+                            ExecutionMode::LocalTranslated => 3,
+                            ExecutionMode::LocalHle => 4,
+                            ExecutionMode::RemoteStream => 5,
+                            ExecutionMode::Unsupported => 99,
                         };
+                        compatible_candidates.push((rank, caps.backend_id.clone(), caps.execution_mode));
                     }
+                }
+
+                if !compatible_candidates.is_empty() {
+                    compatible_candidates.sort_by_key(|c| c.0);
+                    let (_, best_backend_id, best_mode) = compatible_candidates.remove(0);
+                    return NegotiationResult::Compatible {
+                        backend_id: best_backend_id,
+                        execution_mode: best_mode,
+                    };
                 }
 
                 NegotiationResult::Incompatible {

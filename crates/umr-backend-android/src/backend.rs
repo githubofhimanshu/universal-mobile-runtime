@@ -138,6 +138,17 @@ impl IAndroidBackend for AndroidVirtualizationBackend {
         };
         self.partition_config = Some(part_config);
 
+        // 3. If guest transport is alive and apk exists on host, install it to guest
+        let t = self.transport.lock().map_err(|_| {
+            DiagnosticError::new(ErrorCode::ErrBackendInternal, "Transport lock poisoned")
+        })?;
+        if t.is_alive() {
+            let apk_path = PathBuf::from(&package.file_path);
+            if apk_path.exists() {
+                let _ = t.execute_command(&format!("pm install -r -g \"{}\"", apk_path.display()));
+            }
+        }
+
         Ok(())
     }
 
@@ -146,8 +157,18 @@ impl IAndroidBackend for AndroidVirtualizationBackend {
             DiagnosticError::new(ErrorCode::ErrBackendInternal, "Transport lock poisoned")
         })?;
 
-        // Launch target activity via transport
-        let cmd = format!("am start -n {}/MainActivity", session.package_id);
+        // Verify guest transport connectivity
+        if !t.is_alive() {
+            return Err(DiagnosticError::new(
+                ErrorCode::ErrBackendUnavailable,
+                "No active Android virtualization guest found",
+            )
+            .with_suggestion("Ensure an Android VM or emulator is running and connected (e.g. 'adb connect 127.0.0.1:5555').")
+            .with_context(format!("Target backend: {}", self.capabilities.backend_id)));
+        }
+
+        // Launch target activity via transport using standard launcher category
+        let cmd = format!("monkey -p {} -c android.intent.category.LAUNCHER 1", session.package_id);
         let output = t.execute_command(&cmd)?;
         if !output.is_success() {
             return Err(DiagnosticError::new(
