@@ -201,10 +201,15 @@ impl IAndroidBackend for AndroidVirtualizationBackend {
         let cmd = format!("monkey -p {} -c android.intent.category.LAUNCHER 1", session.package_id);
         let output = t.execute_command(&cmd)?;
         if !output.is_success() {
-            return Err(DiagnosticError::new(
-                ErrorCode::ErrBackendSessionFailed,
-                format!("Failed to launch activity: {}", output.stderr),
-            ));
+            // Fallback attempt: launch via am start
+            let am_cmd = format!("am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p {}", session.package_id);
+            let am_out = t.execute_command(&am_cmd)?;
+            if !am_out.is_success() {
+                return Err(DiagnosticError::new(
+                    ErrorCode::ErrBackendSessionFailed,
+                    format!("Failed to launch activity: {}", output.stderr),
+                ));
+            }
         }
 
         // Record launch in package manager and initialize watchdog

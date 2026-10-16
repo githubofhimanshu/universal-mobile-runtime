@@ -73,3 +73,17 @@ fn test_guest_supervisor_online_bypass() {
     assert!(res.is_ok());
 }
 
+#[test]
+fn test_guest_supervisor_interactive_configuration() {
+    let sup_default = GuestSupervisor::new("test_avd");
+    assert!(sup_default.is_interactive());
+    assert!(sup_default.is_enabled());
+
+    let sup_headless = GuestSupervisor::headless("test_avd");
+    assert!(!sup_headless.is_interactive());
+    assert!(sup_headless.is_enabled());
+
+    let sup_disabled = GuestSupervisor::disabled();
+    assert!(!sup_disabled.is_enabled());
+}
+

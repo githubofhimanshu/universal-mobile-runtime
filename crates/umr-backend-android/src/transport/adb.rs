@@ -108,6 +108,9 @@ impl AdbTransport {
     /// Queries attached devices via ADB CLI and selects the first active device.
     pub fn detect_active_device(&self) -> Option<String> {
         let bin = self.adb_bin.as_ref()?;
+        let target_str = self.address.to_string();
+        let is_custom_endpoint = self.address.port() != 5555 && self.address.port() != 5037;
+
         let output = Command::new(bin).arg("devices").output().ok()?;
         if !output.status.success() {
             return None;
@@ -117,13 +120,14 @@ impl AdbTransport {
         for line in stdout.lines() {
             let parts: Vec<&str> = line.split_whitespace().collect();
             if parts.len() >= 2 && parts[1] == "device" {
-                return Some(parts[0].to_string());
+                if !is_custom_endpoint || parts[0].contains(&target_str) {
+                    return Some(parts[0].to_string());
+                }
             }
         }
 
-        // If no device attached, attempt connecting to local port
-        let connect_arg = self.address.to_string();
-        let _ = Command::new(bin).arg("connect").arg(&connect_arg).output();
+        // If no device attached, attempt connecting to target address
+        let _ = Command::new(bin).arg("connect").arg(&target_str).output();
 
         // Check again after connect attempt
         if let Ok(retry_output) = Command::new(bin).arg("devices").output() {
@@ -131,7 +135,9 @@ impl AdbTransport {
             for line in retry_str.lines() {
                 let parts: Vec<&str> = line.split_whitespace().collect();
                 if parts.len() >= 2 && parts[1] == "device" {
-                    return Some(parts[0].to_string());
+                    if !is_custom_endpoint || parts[0].contains(&target_str) {
+                        return Some(parts[0].to_string());
+                    }
                 }
             }
         }

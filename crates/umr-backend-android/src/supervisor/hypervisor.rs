@@ -20,6 +20,7 @@ pub struct GuestSupervisor {
     avd_name: String,
     boot_timeout_secs: u64,
     enabled: bool,
+    interactive: bool,
     child_process: Arc<Mutex<Option<Child>>>,
 }
 
@@ -35,6 +36,17 @@ impl GuestSupervisor {
             avd_name: avd_name.to_string(),
             boot_timeout_secs: 90,
             enabled: true,
+            interactive: true,
+            child_process: Arc::new(Mutex::new(None)),
+        }
+    }
+
+    pub fn headless(avd_name: &str) -> Self {
+        Self {
+            avd_name: avd_name.to_string(),
+            boot_timeout_secs: 90,
+            enabled: true,
+            interactive: false,
             child_process: Arc::new(Mutex::new(None)),
         }
     }
@@ -44,6 +56,7 @@ impl GuestSupervisor {
             avd_name: "umr_guest".to_string(),
             boot_timeout_secs: 90,
             enabled: false,
+            interactive: false,
             child_process: Arc::new(Mutex::new(None)),
         }
     }
@@ -53,6 +66,17 @@ impl GuestSupervisor {
             avd_name: avd_name.to_string(),
             boot_timeout_secs,
             enabled: true,
+            interactive: true,
+            child_process: Arc::new(Mutex::new(None)),
+        }
+    }
+
+    pub fn with_interactive(avd_name: &str, interactive: bool) -> Self {
+        Self {
+            avd_name: avd_name.to_string(),
+            boot_timeout_secs: 90,
+            enabled: true,
+            interactive,
             child_process: Arc::new(Mutex::new(None)),
         }
     }
@@ -61,8 +85,16 @@ impl GuestSupervisor {
         self.enabled
     }
 
+    pub fn is_interactive(&self) -> bool {
+        self.interactive
+    }
+
     pub fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
+    }
+
+    pub fn set_interactive(&mut self, interactive: bool) {
+        self.interactive = interactive;
     }
 
     /// Automatically locates the Android SDK root directory from environment or standard paths.
@@ -186,21 +218,24 @@ impl GuestSupervisor {
             AvdProvisioner::provision_avd_if_missing(&self.avd_name, &sys_images[0], &resolved_sdk)?;
         }
 
-        // 2. Spawn headless emulator process
+        // 2. Spawn emulator process (interactive window by default, or headless)
         let mut cmd = Command::new(&emu_bin);
         cmd.arg("-avd")
             .arg(&self.avd_name)
-            .arg("-no-window")
-            .arg("-no-audio")
-            .arg("-no-boot-anim")
             .arg("-accel")
             .arg("on")
             .arg("-gpu")
             .arg("host");
 
-        #[cfg(windows)]
-        {
-            cmd.creation_flags(CREATE_NO_WINDOW);
+        if !self.interactive {
+            cmd.arg("-no-window")
+                .arg("-no-audio")
+                .arg("-no-boot-anim");
+
+            #[cfg(windows)]
+            {
+                cmd.creation_flags(CREATE_NO_WINDOW);
+            }
         }
 
         let child = cmd.spawn().map_err(|e| {
